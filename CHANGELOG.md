@@ -4,6 +4,17 @@ This file documents all notable changes to the GEOS-Chem repository starting in 
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased TBD]
+### Added
+- BCPO -> BCPI chemistry is now done in KPP
+- OCPO -> OCPI chemistry is now done in KPP
+- SOAP -> SOAS chemistry is now done in KPP
+- New folder `KPP/fullchem_csoa` for fullchem mechanism + complex SOA in KPP
+
+### Changed
+- KPP 3.0.0 is now the minimum required version for mechanisms
+- Moved several SOA rate computations into `KPP/fullchem/fullchem_csoa_AerosolFuncs.F90`
+
 ## [Unreleased 14.2.0]
 ### Added
   - Added a printout of GEOS-Chem species and indices

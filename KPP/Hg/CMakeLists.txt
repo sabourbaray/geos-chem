@@ -45,6 +45,7 @@ add_library(KPP STATIC EXCLUDE_FROM_ALL
   stub_fullchem_AutoReduceFuncs.F90
   stub_fullchem_HetStateFuncs.F90
   stub_fullchem_SulfurChemFuncs.F90
+  stub_fullchem_csoa_AerosolFuncs.F90
 )
 
 # Dependencies

@@ -6,6 +6,25 @@
   ! NOTE: Make sure this is consistent w/ the value in physconsts.F90!
   REAL(dp), PARAMETER :: CON_R = 0.083144598_dp
 
+  ! Rate constant [1/s] for BCPO -> BCPI and OCPO -> OCPI
+  ! (based on a 1.15 day lifetime)
+  REAL(dp), PARAMETER :: k_Cphob_to_Cphil = 1.0_dp / ( 86400.0_dp * 1.15_dp )
+
+  ! Rate constant [1/s] for SOAP -> SOAS
+  ! (based on a 1 day lifetime)
+  REAL(dp), PARAMETER :: k_SOAP_to_SOAS = 1.0_dp / 86400.0_dp
+
+  ! Inverse of 298K, 300K, 310K temperatures
+  REAL(dp), PARAMETER :: INV_K298 = 1.0_dp / 298.0_dp
+  REAL(dp), PARAMETER :: INV_K300 = 1.0_dp / 300.0_dp
+  REAL(dp), PARAMETER :: INV_K310 = 1.0_dp / 310.0_dp
+
+  ! Array dimensions for the fullchem_csoa mechanism
+  INTEGER,  PARAMETER :: MHC   = 11 ! max # HCs
+  INTEGER,  PARAMETER :: MSV   = 5  ! max # lumped semivols
+  INTEGER,  PARAMETER :: MPROD = 4  ! max # volatility products
+  INTEGER,  PARAMETER :: MNOX  = 3  ! max # NOx levels/oxidants
+
   !==========================================================================
   ! Molecular weights and Henry's law constants
   !==========================================================================
@@ -31,6 +50,14 @@
   ! Square root of Temperature [K**0.5]
   REAL(dp) :: SR_TEMP
   !$OMP THREADPRIVATE( SR_TEMP )
+
+  ! TEMP_OVER_K298 - Temperature [K] / 300
+  REAL(dp) :: TEMP_OVER_K298
+  !$OMP THREADPRIVATE( TEMP_OVER_K298 )
+
+  ! K298_OVER_TEMP - 298 K / Temperature [K]
+  REAL(dp) :: K298_OVER_TEMP
+  !$OMP THREADPRIVATE( K298_OVER_TEMP )
 
   ! TEMP_OVER_K300 - Temperature [K] / 300.0
   REAL(dp) :: TEMP_OVER_K300
@@ -62,8 +89,7 @@
   ! Photolysis rates (increase size if necessary)
   ! Used by fullchem and Hg mechanisms
   REAL(dp) :: PHOTOL(200)
-  !$OMP THREADPRIVATE( PHOTOL )
-
+  !$OMP THREADPRIVATE( PHOTOL  )
 
   !=========================================================================
   ! Variables specific to the "fullchem" mechanism
