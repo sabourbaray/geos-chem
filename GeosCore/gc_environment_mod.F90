@@ -79,7 +79,7 @@ CONTAINS
 !
 ! !USES:
 !
-    USE CMN_FJX_MOD,        ONLY : Init_CMN_FJX
+    USE CMN_FastJX_Mod,     ONLY : Init_CMN_FastJX
     USE ErrCode_Mod
     USE Input_Opt_Mod
     USE State_Grid_Mod,     ONLY : GrdState
@@ -143,8 +143,8 @@ CONTAINS
     ThisLoc  = &
        ' -> at GC_Allocate_All  (in module GeosCore/gc_environment_mod.F90)'
 
-    ! Initialize CMN_FJX_mod.F90
-    CALL Init_CMN_FJX( Input_Opt, State_Grid, RC )
+    ! Initialize CMN_FastJX_mod.F90
+    CALL Init_CMN_FastJX( Input_Opt,State_Grid, RC )
 
     ! Trap potential errors
     IF ( RC /= GC_SUCCESS ) THEN
@@ -679,7 +679,7 @@ CONTAINS
     IF ( Input_Opt%ITS_A_MERCURY_SIM ) THEN
 
        ! Main mercury module
-       CALL Init_Mercury( Input_Opt, State_Chm, State_Diag, State_Grid, RC )
+       CALL Init_Mercury( Input_Opt, State_Grid, State_Chm, State_Diag, RC )
        IF ( RC /= GC_SUCCESS ) THEN
           ErrMsg = 'Error encountered in "Init_Mercury"!'
           CALL GC_Error( ErrMsg, RC, ThisLoc )

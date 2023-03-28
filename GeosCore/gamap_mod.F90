@@ -1043,7 +1043,7 @@ CONTAINS
 !
 ! !USES:
 !
-    USE CMN_FJX_MOD,        ONLY : W_
+    USE CMN_FastJX_Mod,     ONLY : W_
     USE CMN_SIZE_MOD,       ONLY : NRHAER, NDUST, NSTRATAER
     USE ErrCode_Mod
     USE Input_Opt_Mod,      ONLY : OptInput
