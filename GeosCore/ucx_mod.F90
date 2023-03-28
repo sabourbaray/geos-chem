@@ -748,7 +748,11 @@ CONTAINS
 !
 ! !USES:
 !
+!cldj #ifdef CLOUDJ
+!cldj     USE Cldj_Cmn_Mod,       ONLY : RAA
+!cldj #else
     USE CMN_FastJX_Mod,     ONLY : RAA
+!cldj #endif
     USE ErrCode_Mod
     USE ERROR_MOD,          ONLY : IT_IS_NAN,ERROR_STOP
     USE Input_Opt_Mod,      ONLY : OptInput
@@ -915,7 +919,11 @@ CONTAINS
                 RWET(IBC) = WERADIUS(I,J,L,2)*1.e-2_fp
              ELSE
                 ! Use defaults, assume dry (!)
+!cldj #ifdef CLOUDJ
+!cldj                 RWET(IBC) = RAA(29) * 1.0e-6_fp
+!cldj #else
                 RWET(IBC) = RAA(State_Chm%Phot%IND999,29) * 1.0e-6_fp
+!cldj #endif
              ENDIF
 
              ! Taken from aerosol_mod (MSDENS(2))

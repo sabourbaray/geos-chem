@@ -1043,7 +1043,11 @@ CONTAINS
 !
 ! !USES:
 !
+!cldj #ifdef CLOUDJ
+!cldj     USE Cldj_Cmn_Mod,       ONLY : W_
+!cldj #else
     USE CMN_FastJX_Mod,     ONLY : W_
+!cldj #endif
     USE CMN_SIZE_MOD,       ONLY : NRHAER, NDUST, NSTRATAER
     USE ErrCode_Mod
     USE Input_Opt_Mod,      ONLY : OptInput

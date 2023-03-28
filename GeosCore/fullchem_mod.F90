@@ -91,6 +91,15 @@ CONTAINS
 !
 ! !USES:
 !
+!cldj #ifdef CLOUDJ
+!cldj     ! all for debugging
+!cldj     USE Cldj_Cmn_Mod,             ONLY : JLABEL, JFACTA, NRATJ, RNAMES
+!cldj     USE Cldj_Cmn_Mod,             ONLY : BRANCH, JIND
+!cldj #else
+!cldj     ! all for debugging
+!cldj     USE CMN_FastJX_mod,           ONLY : JLABEL, JFACTA, NRATJ, RNAMES
+!cldj     USE CMN_FastJX_mod,           ONLY : BRANCH, JIND
+!cldj #endif
     USE ErrCode_Mod
     USE ERROR_MOD
     USE fullchem_AutoReduceFuncs, ONLY : fullchem_AR_KeepHalogensActive
@@ -1547,6 +1556,35 @@ CONTAINS
     ENDDO
     !$OMP END PARALLEL DO
 
+!cldj    ! ewl debugging
+!cldj    do N=1,State_Chm%Phot%nMaxPhotRxns
+!cldj        ! GC photolysis species index
+!cldj        P = GC_Photo_Id(N)
+!cldj        print *, " "
+!cldj        print *, "In loop over State_Chm%Phot%nMaxPhotRxns (JVN_): ", N, " of ", &
+!cldj                 State_Chm%Phot%nMaxPhotRxns
+!cldj        print *, "# photolysis reactions in chemistry = NRATJ: ", NRATJ
+!cldj        print *, "ewl: size(zpj): ", size(zpj)
+!cldj        print *, "ewl: size(state_diag%jval): ", size(state_diag%jval)
+!cldj        print *, "ewl: JLABEL(N): ", trim(JLABEL(N))
+!cldj        print *, "ewl: RNAMES(N): ", trim(RNAMES(N))
+!cldj        print *, "ewl: BRANCH(N): ", BRANCH(N)
+!cldj        print *, "ewl: JIND(N): ", JIND(N)
+!cldj        print *, "ewl: JFACTA(N): ", JFACTA(N)
+!cldj        print *, "ewl: P = GC_Photo_Id(N): ", P
+!cldj        print *, "ewl: max(zpj(L=1,N,:,:): ", maxval(zpj(1,N,:,:))
+!cldj        ! If this FAST_JX photolysis species maps to a valid
+!cldj        ! GEOS-Chem photolysis species (for this simulation)...
+!cldj        IF ( P > 0 .and. P <= State_Chm%nPhotol ) THEN
+!cldj           print *, "ewl: P maps to a valid GEOS-Chem photolysis species"
+!cldj           print *, "ewl: S = State_Diag%Map_Jval%id2slot(P): ", S
+!cldj           S = State_Diag%Map_Jval%id2slot(P)
+!cldj           IF ( S > 0 ) THEN
+!cldj              print *, "ewl: max(jval(:,:,L=1,S): ", maxval(state_diag%jval(:,:,1,S))
+!cldj           ENDIF
+!cldj        ENDIF
+!cldj    enddo
+
     ! Stop timer
     IF ( Input_Opt%useTimers ) THEN
        CALL Timer_End( "  -> FlexChem loop", RC )
@@ -1701,6 +1739,13 @@ CONTAINS
 !
     USE Input_Opt_Mod, ONLY : OptInput
     USE State_Chm_Mod, ONLY : ChmState
+!cldj #ifdef CLOUDJ
+!cldj     ! all for debugging
+!cldj     USE Cldj_Cmn_Mod
+!cldj #else
+!cldj     ! all for debugging
+!cldj     USE CMN_FastJX_Mod
+!cldj #endif
 !
 ! !INPUT PARAMETERS:
 !
@@ -1744,7 +1789,42 @@ CONTAINS
           ! Print the status of photolysis: on or off
        IF ( Input_Opt%Do_Photolysis ) THEN
           WRITE( 6, 150 )
+!cldj #ifdef CLOUDJ
+!cldj  150      FORMAT(  '* Photolysis is activated -- rates computed by Cloud-J' )
+!cldj #else
  150      FORMAT(  '* Photolysis is activated -- rates computed by FAST-JX' )
+!cldj #endif
+!cldj           ! ewl debugging
+!cldj           print *, "    Parameters used in photolysis:"
+!cldj           print *, "    W_    : ", W_
+!cldj           print *, "    JVN_  : ", JVN_
+!cldj           print *, "    L_    : ", L_
+!cldj           print *, "    L1_   : ", L1_
+!cldj           print *, "    L2_   : ", L2_
+!cldj           print *, "    JVL_  : ", JVL_ 
+!cldj           print *, "    JXL1_ : ", JXL1_
+!cldj           print *, "    JXL2_ : ", JXL2_
+!cldj           print *, "    AN_   : ", AN_
+!cldj           print *, "    WX_   : ", WX_
+!cldj           print *, "    NAA   : ", NAA
+!cldj           print *, "    X_    : ", X_
+!cldj           print *, "    A_    : ", A_
+!cldj           print *, "    N_    : ", N_
+!cldj           print *, "    EMU   : ", EMU
+!cldj           print *, "    WT    : ", WT
+!cldj           print *, "    ZZHT  : ", ZZHT
+!cldj           print *, "    RAD   : ", RAD
+!cldj           print *, "    NRATJ : ", NRATJ
+!cldj           print *, "    ATAU  : ", ATAU
+!cldj           print *, "    ATAU0 : ", ATAU0
+!cldj           print *, "    NW1   : ", NW1
+!cldj           print *, "    NW2   : ", NW2
+!cldj           print *, "    NJX   : ", NJX
+!cldj #ifdef CLOUDJ
+!cldj           print *, "    RAA(29) : ", RAA(29)
+!cldj #else
+!cldj           print *, "    RAA(IND999,29) : ", RAA(State_Chm%Phot%IND999,29)
+!cldj #endif
        ELSE
           WRITE( 6, 160 )
  160      FORMAT(  '* Photolysis is off for testing -- using zero J-values'  )
@@ -1752,6 +1832,7 @@ CONTAINS
 
        ! Write footer
        WRITE( 6, '(a)' ) REPEAT( '=', 79 )
+
     ENDIF
 
   END SUBROUTINE PrintFirstTimeInfo
