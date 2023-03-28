@@ -16,7 +16,6 @@ MODULE CARBON_MOD
 !
 ! !USES:
 !
-  USE AEROSOL_MOD, ONLY : OCFPOA, OCFOPOA
   USE PhysConstants     ! Physical constants
   USE PRECISION_MOD     ! For GEOS-Chem Precisions
 
@@ -323,7 +322,8 @@ CONTAINS
     USE HCO_STATE_MOD,        ONLY : HCO_GetHcoID
 #endif
 #ifdef BPCH_DIAG
-    USE CMN_O3_MOD,           ONLY : SAVEOA
+    USE CMN_O3_Mod,           ONLY : SAVEOA
+    USE Diagnostics_Mod,      ONLY : OASAVE
 #endif
 #ifdef TOMAS
     USE TOMAS_MOD,            ONLY : SOACOND, IBINS              !(win, 1/25/10)
@@ -1821,8 +1821,8 @@ CONTAINS
          JHC = PARENTPOA
          JSV = IDSV(JHC)
          DO IPR = 1, NPROD(JSV)
-            ORG_GAS(IPR,JSV) = ORG_GAS(IPR,JSV) * OCFPOA(I,J)
-            ORG_AER(IPR,JSV) = ORG_AER(IPR,JSV) * OCFPOA(I,J)
+            ORG_GAS(IPR,JSV) = ORG_GAS(IPR,JSV) * State_Chm%Aer%OCFPOA(I,J)
+            ORG_AER(IPR,JSV) = ORG_AER(IPR,JSV) * State_Chm%Aer%OCFPOA(I,J)
          ENDDO
       ENDIF
 
@@ -1833,8 +1833,8 @@ CONTAINS
          JHC = PARENTOPOA
          JSV = IDSV(JHC)
          DO IPR = 1, NPROD(JSV)
-            ORG_GAS(IPR,JSV) = ORG_GAS(IPR,JSV) * OCFOPOA(I,J)
-            ORG_AER(IPR,JSV) = ORG_AER(IPR,JSV) * OCFOPOA(I,J)
+            ORG_GAS(IPR,JSV) = ORG_GAS(IPR,JSV) * State_Chm%Aer%OCFOPOA(I,J)
+            ORG_AER(IPR,JSV) = ORG_AER(IPR,JSV) * State_Chm%Aer%OCFOPOA(I,J)
          ENDDO
       ENDIF
 
@@ -1941,7 +1941,7 @@ CONTAINS
       ! Now treat either traditional POA or semivolatile POA (hotp 7/25/10)
       IF ( id_OCPI > 0 .and. id_OCPO > 0 ) THEN
          MPOC = ( Spc(id_OCPI)%Conc(I,J,L) + Spc(id_OCPO)%Conc(I,J,L) ) * FAC
-         MPOC = MPOC * OCFOPOA(I,J)
+         MPOC = MPOC * State_Chm%Aer%OCFOPOA(I,J)
       ELSE
          ! semivolpoa2: MPOC is zero now (hotp 2/27/09)
          MPOC = 1e-30_fp
@@ -2021,8 +2021,8 @@ CONTAINS
             JHC = PARENTPOA
             JSV = IDSV(JHC)
             DO IPR = 1, NPROD(JSV)
-               ORG_GAS(IPR,JSV) = ORG_GAS(IPR,JSV) / OCFPOA(I,J)
-               ORG_AER(IPR,JSV) = ORG_AER(IPR,JSV) / OCFPOA(I,J)
+               ORG_GAS(IPR,JSV) = ORG_GAS(IPR,JSV) / State_Chm%Aer%OCFPOA(I,J)
+               ORG_AER(IPR,JSV) = ORG_AER(IPR,JSV) / State_Chm%Aer%OCFPOA(I,J)
             ENDDO
          ENDIF
 
@@ -2032,8 +2032,8 @@ CONTAINS
             JHC = PARENTOPOA
             JSV = IDSV(JHC)
             DO IPR = 1, NPROD(JSV)
-               ORG_GAS(IPR,JSV) = ORG_GAS(IPR,JSV) / OCFOPOA(I,J)
-               ORG_AER(IPR,JSV) = ORG_AER(IPR,JSV) / OCFOPOA(I,J)
+               ORG_GAS(IPR,JSV) = ORG_GAS(IPR,JSV) / State_Chm%Aer%OCFOPOA(I,J)
+               ORG_AER(IPR,JSV) = ORG_AER(IPR,JSV) / State_Chm%Aer%OCFOPOA(I,J)
             ENDDO
          ENDIF
 
@@ -3250,8 +3250,8 @@ CONTAINS
       print*, 'Semivolatile POA settings:---------------'
       print*, ' ALPHA:   ', ALPHA(1,1,9), ALPHA(1,2,9)
       ! OCFPOA and OCFOPOA are now 2D arrays
-      !print*, ' POA OA/OC ratio:    ', OCFPOA(I,J)
-      !print*, ' OPOA OA/OC ratio:   ', OCFOPOA(I,J)
+      !print*, ' POA OA/OC ratio:    ', State_Chm%Aer%OCFPOA(I,J)
+      !print*, ' OPOA OA/OC ratio:   ', State_Chm%Aer%OCFOPOA(I,J)
       print*, ' LSVPOA is set to:   ', Input_Opt%LSVPOA
 
       print*, 'CHECK MHC, NOX, PR', MHC, MNOX, MPROD
@@ -6181,10 +6181,10 @@ CONTAINS
    ! Add primary material as appropriate
    IF ( id_POA1 > 0 ) THEN
       MOTEMP = MOTEMP              + &
-               Spc(id_POA1 )%Conc(I,J,L) * OCFPOA(I,J)  + &
-               Spc(id_POA2 )%Conc(I,J,L) * OCFPOA(I,J)  + &
-               Spc(id_OPOA1)%Conc(I,J,L) * OCFOPOA(I,J) + &
-               Spc(id_OPOA2)%Conc(I,J,L) * OCFOPOA(I,J)
+               Spc(id_POA1 )%Conc(I,J,L) * State_Chm%Aer%OCFPOA(I,J)  + &
+               Spc(id_POA2 )%Conc(I,J,L) * State_Chm%Aer%OCFPOA(I,J)  + &
+               Spc(id_OPOA1)%Conc(I,J,L) * State_Chm%Aer%OCFOPOA(I,J) + &
+               Spc(id_OPOA2)%Conc(I,J,L) * State_Chm%Aer%OCFOPOA(I,J)
    ELSEIF ( id_OCPI > 0 ) THEN
       MOTEMP = MOTEMP + &
                ( Spc(id_OCPI)%Conc(I,J,L) + Spc(id_OCPO)%Conc(I,J,L) ) * 2.1e+0_fp

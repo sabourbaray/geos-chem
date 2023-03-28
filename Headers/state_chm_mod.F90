@@ -21,6 +21,7 @@ MODULE State_Chm_Mod
 !
 ! USES:
 !
+  USE Aer_Container_Mod                  ! Aerosol derived type
   USE Dictionary_M, ONLY : dictionary_t  ! Fortran hash table type
   USE ErrCode_Mod                        ! Error handling
   USE PhysConstants                      ! Physical constants
@@ -139,6 +140,7 @@ MODULE State_Chm_Mod
      !-----------------------------------------------------------------------
      ! Aerosol quantities
      !-----------------------------------------------------------------------
+     TYPE(AerContainer),POINTER :: Aer                  ! Aerosol data object
      REAL(fp),          POINTER :: AeroArea   (:,:,:,:) ! Aerosol Area [cm2/cm3]
      REAL(fp),          POINTER :: AeroRadi   (:,:,:,:) ! Aerosol Radius [cm]
      REAL(fp),          POINTER :: WetAeroArea(:,:,:,:) ! Aerosol Area [cm2/cm3]
@@ -480,6 +482,7 @@ CONTAINS
     State_Chm%RRTMG_iCld        = 0
 
     ! Aerosol and chemistry quantities
+    State_Chm%Aer               => NULL()
     State_Chm%AeroArea          => NULL()
     State_Chm%AeroRadi          => NULL()
     State_Chm%WetAeroArea       => NULL()
@@ -961,6 +964,18 @@ CONTAINS
 
        ! Save nAerosol to State_Chm
        State_Chm%nAeroType = nAerosol
+
+       !---------------------------------------------------------------------
+       ! Aerosol object
+       ! NOTE: content is currently not registered
+       !---------------------------------------------------------------------
+       ALLOCATE( State_Chm%Aer, STAT=RC )
+       CALL Init_Aer_Container( Input_Opt, State_Grid, State_Chm%Aer, RC )
+       IF ( RC /= GC_SUCCESS ) THEN
+          errMsg = 'Error encountered in "Init_Aer_Container" routine!'
+          CALL GC_Error( errMsg, RC, thisLoc )
+          RETURN
+       ENDIF
 
        !---------------------------------------------------------------------
        ! AeroArea
@@ -3091,6 +3106,11 @@ CONTAINS
        CALL GC_CheckVar( 'State_Chm%BoundaryCond', 2, RC )
        IF ( RC /= GC_SUCCESS ) RETURN
        State_Chm%BoundaryCond => NULL()
+    ENDIF
+
+    IF ( ASSOCIATED ( State_Chm%Aer ) ) THEN
+       CALL Cleanup_Aer_Container(State_Chm%Aer, RC )
+       State_Chm%Aer => NULL()
     ENDIF
 
     IF ( ASSOCIATED( State_Chm%AeroArea ) ) THEN

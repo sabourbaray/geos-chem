@@ -497,6 +497,9 @@ MODULE State_Diag_Mod
      REAL(f4),           POINTER :: TotalBiogenicOA(:,:,:)
      LOGICAL                     :: Archive_TotalBiogenicOA
 
+     LOGICAL                     :: Is_POA
+     LOGICAL                     :: Is_OPOA
+
      !%%%%% Advection %%%%%
 
      REAL(f4),           POINTER :: AdvFluxZonal(:,:,:,:)
@@ -1728,6 +1731,9 @@ CONTAINS
     State_Diag%TotalBiogenicOA                     => NULL()
     State_Diag%Archive_TotalBiogenicOA             = .FALSE.
 
+    State_Diag%Is_OPOA                             = .FALSE.
+    State_Diag%Is_POA                              = .FALSE.
+
     !%%%%% Transport diagnostics %%%%%
     State_Diag%AdvFluxZonal                        => NULL()
     State_Diag%Map_AdvFluxZonal                    => NULL()
@@ -2415,6 +2421,7 @@ CONTAINS
 ! !USES:
 !
     USE Input_Opt_Mod,  ONLY : OptInput
+    USE State_Chm_Mod,  ONLY : Ind_
     USE State_Grid_Mod, ONLY : GrdState
 !
 ! !INPUT PARAMETERS:
@@ -5787,6 +5794,12 @@ CONTAINS
           CALL GC_Error( errMsg, RC, thisLoc )
           RETURN
        ENDIF
+
+       !-------------------------------------------------------------------
+       ! Logicals used for aerosol mass and PM
+       !-------------------------------------------------------------------
+       State_Diag%Is_POA = ( Ind_('POA1') > 0 .and. Ind_('POA2') > 0 )
+       State_Diag%Is_OPOA = ( Ind_('OPOA1') > 0 .and. Ind_('OPOA2') > 0 )
 
        !-------------------------------------------------------------------
        ! Number of KPP Integrations per grid box

@@ -25,67 +25,10 @@ MODULE AEROSOL_MOD
 ! !PUBLIC MEMBER FUNCTIONS:
 !
   PUBLIC :: AEROSOL_CONC
-  PUBLIC :: CLEANUP_AEROSOL
-  PUBLIC :: INIT_AEROSOL
   PUBLIC :: RDAER
-  PUBLIC :: Set_AerMass_Diagnostic
 !
 ! !PUBLIC DATA MEMBERS:
 !
-  !========================================================================
-  ! BCPI        : Hydrophilic black carbon aerosol   [kg/m3]
-  ! BCPO        : Hydrophobic black carbon aerosol   [kg/m3]
-  ! OCPI        : Hydrophilic organic carbon aerosol [kg/m3]
-  ! OCPO        : Hydrophobic organic carbon aerosol [kg/m3]
-  ! OCPISOA     : Hydrophilic OC + SOA aerosol       [kg/m3]
-  ! SALA        : Accumulation mode seasalt aerosol  [kg/m3]
-  ! ACL         : Accumulation mode Cl aerosol       [kg/m3]
-  ! SALC        : Coarse mode seasalt aerosol        [kg/m3]
-  ! SO4_NH4_NIT : Lumped SO4-NH4-NIT aerosol         [kg/m3]
-  ! SO4         : Sulfate aerosol                    [kg/m3]
-  ! HMS         : Hydroxymethane sulfonate aerosol   [kg/m3] ! (jmm, 06/29/18)
-  ! NH4         : Ammonium aerosol                   [kg/m3]
-  ! NIT         : Inorganic nitrate aerosol          [kg/m3]
-  ! SLA         : Stratospheric liquid aerosol       [kg/m3]
-  ! SPA         : Stratospheric particulate aerosol  [kg/m3]
-  ! TSOA        : Terpene SOA                        [kg/m3]
-  ! ASOA        : Aromatic + IVOC SOA                [kg/m3]
-  ! OPOA        : Aerosol product of SVOC oxidation  [kg/m3]
-  ! SOAGX       : SOA product of GLYX                [kg/m3]
-  ! SOAIE       : SOA product of IEPOX & HMML        [kg/m3]
-  ! PM25        : Particulate matter < 2.5 um        [kg/m3]
-  ! ISOAAQ      : Isoprene SOA (aqueous formation)   [kg/m3]
-  ! SOAS        : Simple SOA                         [kg/m3]
-  ! OCFPOA      : OM/OC for POA                      [unitless]
-  ! OCFOPOA     : OM/OC for OPOA, OCPI, OCPO         [unitless]
-  !========================================================================
-  REAL(fp), ALLOCATABLE, PUBLIC :: BCPI(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: BCPO(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: OCPI(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: OCPO(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: OCPISOA(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: SALA(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: ACL(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: SALC(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: SO4_NH4_NIT(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: SO4(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: HMS(:,:,:) ! (jmm, 06/29/18)
-  REAL(fp), ALLOCATABLE, PUBLIC :: NH4(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: NIT(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: FRAC_SNA(:,:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: SLA(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: SPA(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: TSOA(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: ASOA(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: OPOA(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: SOAGX(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: PM25(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: PM10(:,:,:)!zhaisx
-  REAL(fp), ALLOCATABLE, PUBLIC :: ISOAAQ(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: SOAS(:,:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: OCFPOA(:,:)
-  REAL(fp), ALLOCATABLE, PUBLIC :: OCFOPOA(:,:)
-
   ! Growth factors
   REAL(fp),              PUBLIC :: SIA_GROWTH
   REAL(fp),              PUBLIC :: ORG_GROWTH
@@ -93,9 +36,6 @@ MODULE AEROSOL_MOD
 !
 ! !DEFINED PARAMETERS:
 !
-  ! For SOAGX, assume the total aerosol mass/glyoxal mass = 1.d0
-  ! for now (tmf, 1/7/09)
-  REAL(fp), PARAMETER,   PUBLIC :: OCFG = 1.e+0_fp
 !
 ! !REMARKS:
 !  References:
@@ -117,39 +57,11 @@ MODULE AEROSOL_MOD
 !
 ! !PRIVATE TYPES:
 !
-  ! Mass of hydrophobic aerosol from Mian Chin
-  REAL(fp), ALLOCATABLE, SAVE   :: DAERSL(:,:,:,:)
-
-  ! Mass of hydrophilic aerosol from Mian Chin
-  REAL(fp), ALLOCATABLE, SAVE   :: WAERSL(:,:,:,:)
-
-  ! Add tracer ID flags as module variables (bmy, 6/16/16)
-  INTEGER :: id_BCPI,  id_BCPO,  id_DST1,  id_DST2
-  INTEGER :: id_DST3,  id_DST4,  id_NH4,   id_NIT
-  INTEGER :: id_OCPO,  id_OCPI,  id_SALA,  id_SALC
-  INTEGER :: id_SO4,   id_SO4s,  id_NITs,  id_NH4s
-  INTEGER :: id_POA1,  id_POA2,  id_OPOA1, id_OPOA2
-  INTEGER :: id_TSOA1, id_TSOA2, id_TSOA3, id_TSOA0
-  INTEGER :: id_ASOAN, id_ASOA1, id_ASOA2, id_ASOA3
-  INTEGER :: id_DUST1, id_SOAS,  id_SALACL, id_HMS   ! (jmm, 06/29/18)
-  INTEGER :: id_SOAGX, id_SOAIE
-  INTEGER :: id_INDIOL,id_LVOCOA
-
   ! Index to map between NRHAER and species database hygroscopic species
   ! NOTE: Increasing value of NRHAER in CMN_SIZE_Mod.F90 (e.g. if there is
   ! a new hygroscopic species) requires manual update of this mapping
   ! (ewl, 1/23/17)
   INTEGER  :: Map_NRHAER(5)
-
-  ! Diagnostic switches
-  LOGICAL  :: Is_POA
-  LOGICAL  :: Is_OPOA
-
-  ! Conversionf factors to ugC/m3 for Total Organic Carbon diagnostic
-  REAL(fp) :: Fac_INDIOL
-  REAL(fp) :: Fac_LVOCOA
-  REAL(fp) :: Fac_SOAGX
-  REAL(fp) :: Fac_SOAIE
 
 CONTAINS
 !EOC
@@ -173,7 +85,7 @@ CONTAINS
 !
 ! !USES:
 !
-    USE CMN_FJX_MOD,      ONLY : REAA
+    USE CMN_FJX_Mod, ONLY : REAA
     USE ErrCode_Mod
     USE ERROR_MOD
 #if !defined( MODEL_CESM )
@@ -182,7 +94,7 @@ CONTAINS
 #endif
     USE Input_Opt_Mod,     ONLY : OptInput
     USE Species_Mod,       ONLY : SpcConc
-    USE State_Chm_Mod,     ONLY : ChmState
+    USE State_Chm_Mod,     ONLY : ChmState, Ind_
     USE State_Diag_Mod,    ONLY : DgnState
     USE State_Grid_Mod,    ONLY : GrdState
     USE State_Met_Mod,     ONLY : MetState
@@ -217,7 +129,25 @@ CONTAINS
 ! !LOCAL VARIABLES:
 !
     ! SAVEd variables
-    LOGICAL,  SAVE      :: FIRST = .TRUE.
+    LOGICAL, SAVE :: FIRST = .TRUE.
+    INTEGER, SAVE :: id_BCPI,  id_BCPO,  id_DST1,  id_DST2
+    INTEGER, SAVE :: id_DST3,  id_DST4,  id_NH4,   id_NIT
+    INTEGER, SAVE :: id_OCPO,  id_OCPI,  id_SALA,  id_SALC
+    INTEGER, SAVE :: id_SO4,   id_SO4s,  id_NITs,  id_NH4s
+    INTEGER, SAVE :: id_POA1,  id_POA2,  id_OPOA1, id_OPOA2
+    INTEGER, SAVE :: id_TSOA1, id_TSOA2, id_TSOA3, id_TSOA0
+    INTEGER, SAVE :: id_ASOAN, id_ASOA1, id_ASOA2, id_ASOA3
+    INTEGER, SAVE :: id_DUST1, id_SOAS,  id_SALACL, id_HMS
+    INTEGER, SAVE :: id_SOAGX, id_SOAIE
+    INTEGER, SAVE :: id_INDIOL,id_LVOCOA
+
+    LOGICAL, SAVE :: IS_OCPO,  IS_OCPI,  IS_BC
+    LOGICAL, SAVE :: IS_SO4,   IS_NH4,   IS_NIT
+    LOGICAL, SAVE :: IS_SAL,   IS_DST,   IS_HMS ! (jmm, 06/29/18)
+    LOGICAL, SAVE :: IS_TSOA,  IS_ASOA
+    LOGICAL, SAVE :: IS_SOAGX
+    LOGICAL, SAVE :: Is_SimpleSOA
+    LOGICAL, SAVE :: Is_ComplexSOA
 
     ! Non-SAVEd variables
     INTEGER             :: I, J, L, N, NA, ND, K
@@ -228,27 +158,41 @@ CONTAINS
     REAL(fp)            :: Rho_wet, Rho_dry
     REAL(fp)            :: REFF
 
-    ! Logical flags
-    LOGICAL             :: LCARB
-    LOGICAL             :: LDUST
-    LOGICAL             :: LSSALT
-    LOGICAL             :: LSULF
-    LOGICAL             :: IS_OCPO,  IS_OCPI,  IS_BC
-    LOGICAL             :: IS_SO4,   IS_NH4,   IS_NIT
-    LOGICAL             :: IS_SAL,   IS_DST,   IS_HMS ! (jmm, 06/29/18)
-    LOGICAL             :: IS_TSOA,  IS_ASOA
-    LOGICAL             :: IS_POA,   IS_OPOA
-    LOGICAL             :: IS_SOAGX
-    LOGICAL             :: Is_SimpleSOA
-    LOGICAL             :: Is_ComplexSOA
-
-    ! Pointers
-    TYPE(SpcConc), POINTER   :: Spc(:)
-    REAL(fp),      POINTER   :: AIRVOL(:,:,:)
-    REAL(fp),      POINTER   :: PMID(:,:,:)
-    REAL(fp),      POINTER   :: T(:,:,:)
-    REAL(fp),      POINTER   :: SOILDUST(:,:,:,:)
-    REAL(fp),      POINTER   :: KG_STRAT_AER(:,:,:,:)
+    ! Pointer to species
+    TYPE(SpcConc), POINTER :: Spc         (:)
+    REAL(fp),      POINTER :: AIRVOL      (:,:,:)
+    REAL(fp),      POINTER :: PMID        (:,:,:)
+    REAL(fp),      POINTER :: T           (:,:,:)
+    REAL(fp),      POINTER :: SOILDUST    (:,:,:,:)
+    REAL(fp),      POINTER :: KG_STRAT_AER(:,:,:,:)
+    REAL(fp),      POINTER :: OCFPOA      (:,:)
+    REAL(fp),      POINTER :: OCFOPOA     (:,:)
+    REAL(fp),      POINTER :: BCPI        (:,:,:)
+    REAL(fp),      POINTER :: BCPO        (:,:,:)
+    REAL(fp),      POINTER :: OCPI        (:,:,:)
+    REAL(fp),      POINTER :: OCPO        (:,:,:)
+    REAL(fp),      POINTER :: OCPISOA     (:,:,:)
+    REAL(fp),      POINTER :: SALA        (:,:,:)
+    REAL(fp),      POINTER :: ACL         (:,:,:)
+    REAL(fp),      POINTER :: SALC        (:,:,:)
+    REAL(fp),      POINTER :: SO4_NH4_NIT (:,:,:)
+    REAL(fp),      POINTER :: SO4         (:,:,:)
+    REAL(fp),      POINTER :: HMS         (:,:,:)
+    REAL(fp),      POINTER :: NH4         (:,:,:)
+    REAL(fp),      POINTER :: NIT         (:,:,:)
+    REAL(fp),      POINTER :: SLA         (:,:,:)
+    REAL(fp),      POINTER :: SPA         (:,:,:)
+    REAL(fp),      POINTER :: TSOA        (:,:,:)
+    REAL(fp),      POINTER :: ASOA        (:,:,:)
+    REAL(fp),      POINTER :: OPOA        (:,:,:)
+    REAL(fp),      POINTER :: SOAGX       (:,:,:)
+    REAL(fp),      POINTER :: PM25        (:,:,:)
+    REAL(fp),      POINTER :: PM10        (:,:,:)
+    REAL(fp),      POINTER :: ISOAAQ      (:,:,:)
+    REAL(fp),      POINTER :: SOAS        (:,:,:)
+    REAL(fp),      POINTER :: FRAC_SNA    (:,:,:,:)
+    REAL(fp),      POINTER :: DAERSL      (:,:,:,:)
+    REAL(fp),      POINTER :: WAERSL      (:,:,:,:)
 
     ! Other variables
     CHARACTER(LEN=63)   :: OrigUnit
@@ -271,33 +215,65 @@ CONTAINS
     ErrMsg  = ''
     ThisLoc = ' -> at AEROSOL_CONC (in module GeosCore/aerosol_mod.F90)'
 
-    ! Copy fields from INPUT_OPT to local variables for use below
-    LCARB   = Input_Opt%LCARB
-    LDUST   = Input_Opt%LDUST
-    LSSALT  = Input_Opt%LSSALT
-    LSULF   = Input_Opt%LSULF
+    ! Set saved species IDs
+    IF ( FIRST ) THEN
+       id_BCPI   = Ind_( 'BCPI'   )
+       id_BCPO   = Ind_( 'BCPO'   )
+       id_DST1   = Ind_( 'DST1'   )
+       id_DST2   = Ind_( 'DST2'   )
+       id_DST3   = Ind_( 'DST3'   )
+       id_DST4   = Ind_( 'DST4'   )
+       id_DUST1  = Ind_( 'DUST1'  )
+       id_NH4    = Ind_( 'NH4'    )
+       id_NIT    = Ind_( 'NIT'    )
+       id_OCPO   = Ind_( 'OCPO'   )
+       id_OCPI   = Ind_( 'OCPI'   )
+       id_SOAS   = Ind_( 'SOAS'   )
+       id_SALA   = Ind_( 'SALA'   )
+       id_SALC   = Ind_( 'SALC'   )
+       id_SALACL = Ind_( 'SALACL' )
+       id_SO4    = Ind_( 'SO4'    )
+       id_SO4s   = Ind_( 'SO4s'   )
+       id_HMS    = Ind_( 'HMS'    )
+       id_NITs   = Ind_( 'NITs'   )
+       id_POA1   = Ind_( 'POA1'   )
+       id_POA2   = Ind_( 'POA2'   )
+       id_OPOA1  = Ind_( 'OPOA1'  )
+       id_OPOA2  = Ind_( 'OPOA2'  )
+       id_TSOA1  = Ind_( 'TSOA1'  )
+       id_TSOA2  = Ind_( 'TSOA2'  )
+       id_TSOA3  = Ind_( 'TSOA3'  )
+       id_TSOA0  = Ind_( 'TSOA0'  )
+       id_ASOAN  = Ind_( 'ASOAN'  )
+       id_ASOA1  = Ind_( 'ASOA1'  )
+       id_ASOA2  = Ind_( 'ASOA2'  )
+       id_ASOA3  = Ind_( 'ASOA3'  )
+       id_SOAGX  = Ind_( 'SOAGX'  )
+       id_SOAIE  = Ind_( 'SOAIE'  )
+       id_INDIOL = Ind_( 'INDIOL' )
+       id_LVOCOA = Ind_( 'LVOCOA' )
 
-    ! Define logical flags
-    IS_OCPI    = ( id_OCPI  > 0 )
-    IS_OCPO    = ( id_OCPO  > 0 )
-    IS_BC      = ( id_BCPI  > 0 .AND. id_BCPO  > 0 )
-    IS_SO4     = ( id_SO4   > 0 )
-    IS_HMS     = ( id_HMS   > 0 ) !(jmm, 06/29/18)
-    IS_NH4     = ( id_NH4   > 0 )
-    IS_NIT     = ( id_NIT   > 0 )
-    IS_DST     = ( id_DST1  > 0 .AND. id_DST2  > 0 )
-    IS_SAL     = ( id_SALA  > 0 .AND. id_SALC  > 0 )
-    IS_TSOA    = ( id_TSOA1 > 0 .AND. id_TSOA2 > 0 .AND. &
-                   id_TSOA3 > 0 .AND. id_TSOA0 > 0 )
-    IS_ASOA    = ( id_ASOAN > 0 .AND. id_ASOA1 > 0 .AND. &
-                   id_ASOA2 > 0 .AND. id_ASOA3 > 0 )
-    IS_POA     = ( id_POA1  > 0 .AND. id_POA2  > 0 )
-    IS_OPOA    = ( id_OPOA1 > 0 .AND. id_OPOA2 > 0 )
-    IS_SOAGX   = ( id_SOAGX > 0 )
+       ! Define logical flags
+       IS_OCPI    = ( id_OCPI  > 0 )
+       IS_OCPO    = ( id_OCPO  > 0 )
+       IS_BC      = ( id_BCPI  > 0 .AND. id_BCPO  > 0 )
+       IS_SO4     = ( id_SO4   > 0 )
+       IS_HMS     = ( id_HMS   > 0 ) !(jmm, 06/29/18)
+       IS_NH4     = ( id_NH4   > 0 )
+       IS_NIT     = ( id_NIT   > 0 )
+       IS_DST     = ( id_DST1  > 0 .AND. id_DST2  > 0 )
+       IS_SAL     = ( id_SALA  > 0 .AND. id_SALC  > 0 )
+       IS_TSOA    = ( id_TSOA1 > 0 .AND. id_TSOA2 > 0 .AND. &
+                      id_TSOA3 > 0 .AND. id_TSOA0 > 0 )
+       IS_ASOA    = ( id_ASOAN > 0 .AND. id_ASOA1 > 0 .AND. &
+                      id_ASOA2 > 0 .AND. id_ASOA3 > 0 )
+       IS_SOAGX   = ( id_SOAGX > 0 )
+       
+       ! Logical flags for SOA scheme
+       Is_SimpleSOA  = ( id_SOAS > 0 )
+       Is_ComplexSOA = Input_Opt%LSOA
 
-    ! Logical flags for SOA scheme
-    Is_SimpleSOA  = ( id_SOAS > 0 )
-    Is_ComplexSOA = Input_Opt%LSOA
+    ENDIF
 
     ! Convert species to [kg] for this routine
     CALL Convert_Spc_Units( Input_Opt, State_Chm, State_Grid, State_Met, &
@@ -310,13 +286,41 @@ CONTAINS
        RETURN
     ENDIF
 
-    ! Initialize pointers
-    Spc      => State_Chm%Species
-    AIRVOL   => State_Met%AIRVOL
-    PMID     => State_Met%PMID
-    T        => State_Met%T
-    SOILDUST => State_Chm%SoilDust
-    KG_STRAT_AER => State_Chm%KG_AER
+    ! Set pointers
+    Spc         => State_Chm%Species
+    AIRVOL      => State_Met%AIRVOL
+    PMID        => State_Met%PMID
+    T           => State_Met%T
+    SOILDUST    => State_Chm%SoilDust
+    KG_STRAT_AER=> State_Chm%KG_AER
+    OCFPOA      => State_Chm%Aer%OCFPOA
+    OCFOPOA     => State_Chm%Aer%OCFOPOA
+    BCPI        => State_Chm%Aer%BCPI
+    BCPO        => State_Chm%Aer%BCPO
+    OCPI        => State_Chm%Aer%OCPI
+    OCPO        => State_Chm%Aer%OCPO
+    OCPISOA     => State_Chm%Aer%OCPISOA
+    SALA        => State_Chm%Aer%SALA
+    ACL         => State_Chm%Aer%ACL
+    SALC        => State_Chm%Aer%SALC
+    SO4_NH4_NIT => State_Chm%Aer%SO4_NH4_NIT
+    SO4         => State_Chm%Aer%SO4
+    HMS         => State_Chm%Aer%HMS
+    NH4         => State_Chm%Aer%NH4
+    NIT         => State_Chm%Aer%NIT
+    SLA         => State_Chm%Aer%SLA
+    SPA         => State_Chm%Aer%SPA
+    TSOA        => State_Chm%Aer%TSOA
+    ASOA        => State_Chm%Aer%ASOA
+    OPOA        => State_Chm%Aer%OPOA
+    SOAGX       => State_Chm%Aer%SOAGX
+    PM25        => State_Chm%Aer%PM25
+    PM10        => State_Chm%Aer%PM10
+    ISOAAQ      => State_Chm%Aer%ISOAAQ
+    SOAS        => State_Chm%Aer%SOAS
+    FRAC_SNA    => State_Chm%Aer%FRAC_SNA
+    DAERSL      => State_Chm%Aer%DAERSL
+    WAERSL      => State_Chm%Aer%WAERSL
 
     !=================================================================
     ! OM/OC ratio
@@ -396,7 +400,7 @@ CONTAINS
        Rad_dry    = REAA(1,k_ORG)
        Rad_wet    = REAA(1,k_ORG) + 35e+0_fp * &
                   ( REAA(2,k_ORG) - REAA(1,k_ORG) ) / 50e+0_fp
-       IF ( IS_POA ) THEN
+       IF ( State_Diag%IS_POA ) THEN
           Rho_dry    = State_Chm%SpcData(id_POA1)%Info%Density
        ELSE IF ( IS_OCPI ) THEN
           Rho_dry    = State_Chm%SpcData(id_OCPI)%Info%Density
@@ -453,7 +457,7 @@ CONTAINS
        !
        ! Units of SO4_NH4_NIT are [kg/m3].  (rjp, bmy, 3/23/03)
        !==============================================================
-       IF ( LSULF ) THEN
+       IF ( Input_Opt%LSULF ) THEN
 
           ! If we are using the full stratospheric chemistry mechanism,
           ! stratospheric NH4 is ignored, stratospheric NIT is taken
@@ -551,7 +555,7 @@ CONTAINS
        ! Compute hydrophilic and hydrophobic BC and OC in [kg/m3]
        ! Also add online 2ndary organics if necessary
        !==============================================================
-       IF ( LCARB ) THEN
+       IF ( Input_Opt%LCARB ) THEN
 
           ! Hydrophilic BC [kg/m3]
           BCPI(I,J,L) = Spc(id_BCPI)%Conc(I,J,L) / AIRVOL(I,J,L)
@@ -561,7 +565,7 @@ CONTAINS
 
           ! Hydrophobic OC [kg/m3]
           ! SOAupdate: Treat either OCPO (x2.1) or POA (x1.4)
-          IF ( IS_POA ) THEN
+          IF ( State_Diag%Is_POA ) THEN
              OCPO(I,J,L) = ( Spc(id_POA1)%Conc(I,J,L)     &
                              + Spc(id_POA2)%Conc(I,J,L) ) &
                            * OCFPOA(I,J) / AIRVOL(I,J,L)
@@ -613,7 +617,7 @@ CONTAINS
        !-----------------------------------------------------------
        ! TOMAS simulations only
        !-----------------------------------------------------------
-       IF ( LDUST ) THEN
+       IF ( Input_Opt%LDUST ) THEN
 
           ! Zero SOILDUST
           SOILDUST(I,J,L,:) = 0.e0_fp
@@ -671,7 +675,7 @@ CONTAINS
        !-----------------------------------------------------------
        ! Preserve original code for non-TOMAS simulations
        !-----------------------------------------------------------
-       IF ( LDUST ) THEN
+       IF ( Input_Opt%LDUST ) THEN
 
           ! Lump 1st dust tracer for het chem
           ! Now use dust size distribution scheme to improve PM2.5
@@ -699,7 +703,7 @@ CONTAINS
        !
        ! Compute accumulation & coarse mode concentration [kg/m3]
        !===========================================================
-       IF ( LSSALT ) THEN
+       IF ( Input_Opt%LSSALT ) THEN
 
           ! Accumulation mode seasalt aerosol [kg/m3]
           SALA(I,J,L) = Spc(id_SALA)%Conc(I,J,L) / AIRVOL(I,J,L)
@@ -758,7 +762,7 @@ CONTAINS
           ENDIF
 
           ! OPOA [kg/m3]
-          IF ( IS_OPOA ) THEN
+          IF ( State_Diag%Is_OPOA ) THEN
              OPOA(I,J,L) = ( Spc(id_OPOA1)%Conc(I,J,L)    &
                            + Spc(id_OPOA2)%Conc(I,J,L) )  &
                            * OCFOPOA(I,J) / AIRVOL(I,J,L)
@@ -838,7 +842,7 @@ CONTAINS
                            + Spc(id_ASOA3)%Conc(I,J,L) ) &
                              / AIRVOL(I,J,L)
 
-          IF ( IS_OPOA ) THEN ! hotp 7/28/10
+          IF ( State_Diag%Is_OPOA ) THEN ! hotp 7/28/10
              OCPISOA(I,J,L) = OCPISOA(I,J,L) +              &
                               ( Spc(id_OPOA1)%Conc(I,J,L)    &
                               + Spc(id_OPOA2)%Conc(I,J,L) ) &
@@ -865,7 +869,7 @@ CONTAINS
        ! SOAGX [kg/m3]
        !===========================================================
        IF ( IS_SOAGX ) THEN
-          SOAGX(I,J,L) = Spc(id_SOAGX)%Conc(I,J,L) * OCFG / AIRVOL(I,J,L)
+          SOAGX(I,J,L) = Spc(id_SOAGX)%Conc(I,J,L) * 1.e+0_fp / AIRVOL(I,J,L)
        ENDIF
 
        !==============================================================
@@ -922,7 +926,7 @@ CONTAINS
 
           ! Need to add OPOA to PM2.5 for complexSOA_SVPOA simulations
           ! -- Maggie Marvin (15 Jul 2020)
-          IF ( Is_OPOA ) THEN
+          IF ( State_Diag%Is_OPOA ) THEN
              PM25(I,J,L) = PM25(I,J,L) + ( OPOA(I,J,L) * ORG_GROWTH )
              PM10(I,J,L) = PM10(I,J,L) + ( OPOA(I,J,L) * ORG_GROWTH )
           ENDIF
@@ -1017,11 +1021,40 @@ CONTAINS
     ENDIF
 
     ! Free pointers
-    Spc      => NULL()
-    AIRVOL   => NULL()
-    PMID     => NULL()
-    T        => NULL()
-    SOILDUST => NULL()
+    Spc         => NULL()
+    AIRVOL      => NULL()
+    PMID        => NULL()
+    T           => NULL()
+    SOILDUST    => NULL()
+    OCFPOA      => NULL()
+    OCFOPOA     => NULL()
+    BCPI        => NULL()
+    BCPO        => NULL()
+    OCPI        => NULL()
+    OCPO        => NULL()
+    OCPISOA     => NULL()
+    SALA        => NULL()
+    ACL         => NULL()
+    SALC        => NULL()
+    SO4_NH4_NIT => NULL()
+    SO4         => NULL()
+    HMS         => NULL()
+    NH4         => NULL()
+    NIT         => NULL()
+    SLA         => NULL()
+    SPA         => NULL()
+    TSOA        => NULL()
+    ASOA        => NULL()
+    OPOA        => NULL()
+    SOAGX       => NULL()
+    PM25        => NULL()
+    PM10        => NULL()
+    ISOAAQ      => NULL()
+    SOAS        => NULL()
+    FRAC_SNA    => NULL()
+    DAERSL      => NULL()
+    WAERSL      => NULL()
+
 
   END SUBROUTINE AEROSOL_CONC
 !EOC
@@ -1046,13 +1079,20 @@ CONTAINS
 !
 ! !USES:
 !
-    USE CMN_SIZE_Mod,   ONLY : NRH, NRHAER, NSTRATAER
-    USE CMN_FJX_MOD
+    USE CMN_FJX_Mod, ONLY : IWVREQUIRED, IWVSELECT, IRHARR, ACOEF_WV
+    USE CMN_FJX_Mod, ONLY : BCOEF_WV, REAA, QQAA, ALPHAA  
+    USE CMN_FJX_Mod, ONLY : SSAA, ASYMAA, ISOPOD, ODAER   
+    USE CMN_FJX_Mod, ONLY : NWVAA, NWVAA0, NWVREQUIRED, IWV1000
+#ifdef RRTMG
+    USE CMN_FJX_Mod, ONLY : RTODAER, RTSSAER, RTASYMAER
+#endif
+
+    USE CMN_SIZE_Mod,   ONLY : NAER, NRH, NDUST, NRHAER, NSTRATAER
     USE ErrCode_Mod
     USE ERROR_MOD,      ONLY : ERROR_STOP, Safe_Div
     USE Input_Opt_Mod,  ONLY : OptInput
     USE PhysConstants,  ONLY : CONSVAP
-    USE State_Chm_Mod,  ONLY : ChmState
+    USE State_Chm_Mod,  ONLY : ChmState, Ind_
     USE State_Diag_Mod, ONLY : DgnState
     USE State_Grid_Mod, ONLY : GrdState
     USE State_Met_Mod,  ONLY : MetState
@@ -1095,7 +1135,7 @@ CONTAINS
 !
 ! !LOCAL VARIABLES:
 !
-    LOGICAL             :: FIRST = .TRUE.
+    LOGICAL             :: FIRST = .TRUE. ! ewl: shouldn't this be saved???
     LOGICAL             :: LINTERP
     CHARACTER(LEN=16)   :: STAMP
     INTEGER             :: I, J, L, N, R, IRH, W, IRHN, NA, SpcID
@@ -1105,6 +1145,18 @@ CONTAINS
     REAL(fp)            :: MSDENS(NAER), DRYAREA, VDRY, VH2O
     REAL(f8)            :: XTAU
     REAL*8              :: BCSCAT_AE  !(xnw, 8/24/15)
+
+    ! SAVEd variables
+    INTEGER, SAVE :: id_BCPI,  id_BCPO,  id_DST1,  id_DST2
+    INTEGER, SAVE :: id_DST3,  id_DST4,  id_NH4,   id_NIT
+    INTEGER, SAVE :: id_OCPO,  id_OCPI,  id_SALA,  id_SALC
+    INTEGER, SAVE :: id_SO4,   id_SO4s,  id_NITs,  id_NH4s
+    INTEGER, SAVE :: id_POA1,  id_POA2,  id_OPOA1, id_OPOA2
+    INTEGER, SAVE :: id_TSOA1, id_TSOA2, id_TSOA3, id_TSOA0
+    INTEGER, SAVE :: id_ASOAN, id_ASOA1, id_ASOA2, id_ASOA3
+    INTEGER, SAVE :: id_DUST1, id_SOAS,  id_SALACL, id_HMS
+    INTEGER, SAVE :: id_SOAGX, id_SOAIE
+    INTEGER, SAVE :: id_INDIOL,id_LVOCOA
 
     ! Variables for speed diagnostics
     INTEGER             :: ITIMEVALS(8)
@@ -1165,25 +1217,48 @@ CONTAINS
     REAL(fp)            :: TAERVOL
 
     ! Local variables for quantities from Input_Opt
-    LOGICAL             :: LCARB
-    LOGICAL             :: LSSALT
-    LOGICAL             :: LSULF
     LOGICAL             :: Is_ComplexSOA
-    LOGICAL             :: LSTRATOD
-    LOGICAL             :: LRAD
-    LOGICAL             :: LBCAE  ! (xnw, 8/24/15)
-    LOGICAL             :: IS_POA, IS_OCPI
+    LOGICAL             :: IS_OCPI
     REAL(fp)            :: GF_RH
-    REAL(fp)            :: BCAE_1, BCAE_2
 
-    ! Pointers
-    REAL(fp), POINTER   :: BXHEIGHT(:,:,:)
-    REAL(fp), POINTER   :: ERADIUS(:,:,:,:)
-    REAL(fp), POINTER   :: TAREA(:,:,:,:)
-    REAL(fp), POINTER   :: WERADIUS(:,:,:,:)
-    REAL(fp), POINTER   :: WTAREA(:,:,:,:)
+    ! Pointers to State_Chm%Phot
+    REAL(fp), POINTER :: OCFPOA      (:,:)
+    REAL(fp), POINTER :: OCFOPOA     (:,:)
+    REAL(fp), POINTER :: BCPI        (:,:,:)
+    REAL(fp), POINTER :: BCPO        (:,:,:)
+    REAL(fp), POINTER :: OCPI        (:,:,:)
+    REAL(fp), POINTER :: OCPO        (:,:,:)
+    REAL(fp), POINTER :: OCPISOA     (:,:,:)
+    REAL(fp), POINTER :: SALA        (:,:,:)
+    REAL(fp), POINTER :: ACL         (:,:,:)
+    REAL(fp), POINTER :: SALC        (:,:,:)
+    REAL(fp), POINTER :: SO4_NH4_NIT (:,:,:)
+    REAL(fp), POINTER :: SO4         (:,:,:)
+    REAL(fp), POINTER :: HMS         (:,:,:)
+    REAL(fp), POINTER :: NH4         (:,:,:)
+    REAL(fp), POINTER :: NIT         (:,:,:)
+    REAL(fp), POINTER :: SLA         (:,:,:)
+    REAL(fp), POINTER :: SPA         (:,:,:)
+    REAL(fp), POINTER :: TSOA        (:,:,:)
+    REAL(fp), POINTER :: ASOA        (:,:,:)
+    REAL(fp), POINTER :: OPOA        (:,:,:)
+    REAL(fp), POINTER :: SOAGX       (:,:,:)
+    REAL(fp), POINTER :: PM25        (:,:,:)
+    REAL(fp), POINTER :: PM10        (:,:,:)
+    REAL(fp), POINTER :: ISOAAQ      (:,:,:)
+    REAL(fp), POINTER :: SOAS        (:,:,:)
+    REAL(fp), POINTER :: FRAC_SNA    (:,:,:,:)
+    REAL(fp), POINTER :: DAERSL      (:,:,:,:)
+    REAL(fp), POINTER :: WAERSL      (:,:,:,:)
+
+    ! Other pointers
+    REAL(fp), POINTER   :: BXHEIGHT (:,:,:)
+    REAL(fp), POINTER   :: ERADIUS  (:,:,:,:)
+    REAL(fp), POINTER   :: TAREA    (:,:,:,:)
+    REAL(fp), POINTER   :: WERADIUS (:,:,:,:)
+    REAL(fp), POINTER   :: WTAREA   (:,:,:,:)
     REAL(fp), POINTER   :: ACLRADIUS(:,:,:)
-    REAL(fp), POINTER   :: ACLAREA(:,:,:)
+    REAL(fp), POINTER   :: ACLAREA  (:,:,:)
 
     ! For diagnostics
     LOGICAL                :: IsWL1
@@ -1207,32 +1282,87 @@ CONTAINS
     RC                   = GC_SUCCESS
 
     ! Copy fields from INPUT_OPT to local variables for use below
-    LCARB                = Input_Opt%LCARB
-    LSSALT               = Input_Opt%LSSALT
-    LSULF                = Input_Opt%LSULF
     Is_ComplexSOA        = Input_Opt%LSOA
-    LSTRATOD             = Input_Opt%LSTRATOD
-    LRAD                 = Input_Opt%LRAD
-    LBCAE                = Input_Opt%LBCAE !(xnw, 8/24/15)
-    BCAE_1               = Input_Opt%BCAE_1
-    BCAE_2               = Input_Opt%BCAE_2
-
-    ! Define logical flags
-    IS_OCPI              = ( id_OCPI > 0 )
-    IS_POA               = ( id_POA1 > 0 .AND. id_POA2 > 0 )
 
     ! Initialize pointers
-    BXHEIGHT            => State_Met%BXHEIGHT    ! Grid box height [m]
-    ERADIUS             => State_Chm%AeroRadi    ! Aerosol Radius [cm]
-    TAREA               => State_Chm%AeroArea    ! Aerosol Area [cm2/cm3]
-    WERADIUS            => State_Chm%WetAeroRadi ! Wet Aerosol Radius [cm]
-    WTAREA              => State_Chm%WetAeroArea ! Wet Aerosol Area [cm2/cm3]
-    ACLRADIUS           => State_Chm%AClRadi     ! Fine Cl- Radius [cm]
-    ACLAREA             => State_Chm%AClArea     ! Fine Cl- Area [cm2/cm3]
+    BXHEIGHT    => State_Met%BXHEIGHT    ! Grid box height [m]
+    ERADIUS     => State_Chm%AeroRadi    ! Aerosol Radius [cm]
+    TAREA       => State_Chm%AeroArea    ! Aerosol Area [cm2/cm3]
+    WERADIUS    => State_Chm%WetAeroRadi ! Wet Aerosol Radius [cm]
+    WTAREA      => State_Chm%WetAeroArea ! Wet Aerosol Area [cm2/cm3]
+    ACLRADIUS   => State_Chm%AClRadi     ! Fine Cl- Radius [cm]
+    ACLAREA     => State_Chm%AClArea     ! Fine Cl- Area [cm2/cm3]
+    OCFPOA      => State_Chm%Aer%OCFPOA
+    OCFOPOA     => State_Chm%Aer%OCFOPOA
+    BCPI        => State_Chm%Aer%BCPI
+    BCPO        => State_Chm%Aer%BCPO
+    OCPI        => State_Chm%Aer%OCPI
+    OCPO        => State_Chm%Aer%OCPO
+    OCPISOA     => State_Chm%Aer%OCPISOA
+    SALA        => State_Chm%Aer%SALA
+    ACL         => State_Chm%Aer%ACL
+    SALC        => State_Chm%Aer%SALC
+    SO4_NH4_NIT => State_Chm%Aer%SO4_NH4_NIT
+    SO4         => State_Chm%Aer%SO4
+    HMS         => State_Chm%Aer%HMS
+    NH4         => State_Chm%Aer%NH4
+    NIT         => State_Chm%Aer%NIT
+    SLA         => State_Chm%Aer%SLA
+    SPA         => State_Chm%Aer%SPA
+    TSOA        => State_Chm%Aer%TSOA
+    ASOA        => State_Chm%Aer%ASOA
+    OPOA        => State_Chm%Aer%OPOA
+    SOAGX       => State_Chm%Aer%SOAGX
+    PM25        => State_Chm%Aer%PM25
+    PM10        => State_Chm%Aer%PM10
+    ISOAAQ      => State_Chm%Aer%ISOAAQ
+    SOAS        => State_Chm%Aer%SOAS
+    FRAC_SNA    => State_Chm%Aer%FRAC_SNA
+    DAERSL      => State_Chm%Aer%DAERSL
+    WAERSL      => State_Chm%Aer%WAERSL
 
-    ! Initialize the mapping between hygroscopic species in the
-    ! species database and the species order in NRHAER
+    ! First run only
     IF ( FIRST ) THEN
+
+       ! Set species IDs
+       id_BCPI   = Ind_( 'BCPI'   )
+       id_BCPO   = Ind_( 'BCPO'   )
+       id_DST1   = Ind_( 'DST1'   )
+       id_DST2   = Ind_( 'DST2'   )
+       id_DST3   = Ind_( 'DST3'   )
+       id_DST4   = Ind_( 'DST4'   )
+       id_DUST1  = Ind_( 'DUST1'  )
+       id_NH4    = Ind_( 'NH4'    )
+       id_NIT    = Ind_( 'NIT'    )
+       id_OCPO   = Ind_( 'OCPO'   )
+       id_OCPI   = Ind_( 'OCPI'   )
+       id_SOAS   = Ind_( 'SOAS'   )
+       id_SALA   = Ind_( 'SALA'   )
+       id_SALC   = Ind_( 'SALC'   )
+       id_SALACL = Ind_( 'SALACL' )
+       id_SO4    = Ind_( 'SO4'    )
+       id_SO4s   = Ind_( 'SO4s'   )
+       id_HMS    = Ind_( 'HMS'    )
+       id_NITs   = Ind_( 'NITs'   )
+       id_POA1   = Ind_( 'POA1'   )
+       id_POA2   = Ind_( 'POA2'   )
+       id_OPOA1  = Ind_( 'OPOA1'  )
+       id_OPOA2  = Ind_( 'OPOA2'  )
+       id_TSOA1  = Ind_( 'TSOA1'  )
+       id_TSOA2  = Ind_( 'TSOA2'  )
+       id_TSOA3  = Ind_( 'TSOA3'  )
+       id_TSOA0  = Ind_( 'TSOA0'  )
+       id_ASOAN  = Ind_( 'ASOAN'  )
+       id_ASOA1  = Ind_( 'ASOA1'  )
+       id_ASOA2  = Ind_( 'ASOA2'  )
+       id_ASOA3  = Ind_( 'ASOA3'  )
+       id_SOAGX  = Ind_( 'SOAGX'  )
+       id_SOAIE  = Ind_( 'SOAIE'  )
+       id_INDIOL = Ind_( 'INDIOL' )
+       id_LVOCOA = Ind_( 'LVOCOA' )
+
+       ! Initialize the mapping between hygroscopic species in the
+       ! species database and the species order in NRHAER
        DO N = 1, NRHAER
 
           ! Get the species database index from the species database
@@ -1266,6 +1396,9 @@ CONTAINS
        ENDDO
     ENDIF
 
+    ! Define logical flags
+    IS_OCPI              = ( id_OCPI > 0 )
+
     !=================================================================
     ! S U L F A T E   A E R O S O L S
     !
@@ -1278,7 +1411,7 @@ CONTAINS
     ! concentrations [kg/m3] from disk at the start of each month.
     ! (For fullchem simulations only)
     !=================================================================
-    IF ( LSULF ) THEN
+    IF ( Input_Opt%LSULF ) THEN
 
        !-----------------------------------
        ! Use online aerosol concentrations
@@ -1316,7 +1449,7 @@ CONTAINS
     ! concentrations [kg/m3] from disk at the start of each month.
     ! (For full chemistry simulations only)
     !=================================================================
-    IF ( LCARB ) THEN
+    IF ( Input_Opt%LCARB ) THEN
 
        !-----------------------------------
        ! Use online aerosol concentrations
@@ -1367,7 +1500,7 @@ CONTAINS
     ! rather than carrying them separately.
     ! (For fullchem simulations only)
     !=================================================================
-    IF ( LSSALT ) THEN
+    IF ( Input_Opt%LSSALT ) THEN
 
        !-----------------------------------
        ! Use online aerosol concentrations
@@ -1418,7 +1551,7 @@ CONTAINS
     ! Representative aerosol densities (kg/m3):
     MSDENS(1) = State_Chm%SpcData(id_SO4)%Info%Density
     MSDENS(2) = State_Chm%SpcData(id_BCPI)%Info%Density
-    IF ( IS_POA ) THEN
+    IF ( State_Diag%Is_POA ) THEN
        MSDENS(3) = State_Chm%SpcData(id_POA1)%Info%Density
     ELSE IF ( IS_OCPI ) THEN
        MSDENS(3) = State_Chm%SpcData(id_OCPI)%Info%Density
@@ -1457,10 +1590,10 @@ CONTAINS
     IF (ODSWITCH .EQ. 0) THEN !this is the call for Fast_JX at 1000nm
        NWVS   = 1
     ELSE
-       IF ( LRAD ) THEN
+       IF ( Input_Opt%LRAD ) THEN
           !Loop over all RT wavelengths (30)
           ! plus any required for calculating the AOD
-          NWVS = NWVAA-NWVAA0+NWVREQUIRED
+          NWVS = NWVAA - NWVAA0 + NWVREQUIRED
        ELSE
           !Loop over wavelengths needed for
           !interpolation to those requested in geoschem_config.yml
@@ -1474,16 +1607,16 @@ CONTAINS
        IF (ODSWITCH .EQ. 0) THEN
           ! only doing for 1000nm (IWV1000 is set in RD_AOD)
           ! N.B. NWVS is fixed to 1 above - only one wavelength
-          IWV=IWV1000
+          IWV = IWV1000
        ELSE
-          IF ( LRAD ) THEN
+          IF ( Input_Opt%LRAD ) THEN
              ! RRTMG wavelengths begin after NWVAA0 standard wavelengths
              ! but add on any others required
              IF (IIWV.LE.30) THEN
                 !index of RRTMG wavelengths starts after the standard NWVAA0
-                !(currently NWVAA0=11, set in CMN_FJX_mod based on the
-                ! .dat LUT)
-                IWV = IIWV+NWVAA0
+                !(currently NWVAA0=11, hard-coded in phot_container_mod based
+                ! on the .dat LUT)
+                IWV = IIWV + NWVAA0
              ELSE
                 !now we calculate at wvs for the requested AOD
                 IWV = IWVREQUIRED(IIWV-30)
@@ -1671,11 +1804,12 @@ CONTAINS
                 !Include BC absorption enhancement (xnw, 8/24/15)
                 IF (N.eq.2) THEN
 
-                   IF (LBCAE) THEN
+                   IF ( Input_Opt%LBCAE ) THEN
                       BCSCAT_AE = ODAER(I,J,L,IWV,N)*SCALESSA*SSAA(IWV,1,N)
                       ODAER(I,J,L,IWV,N) = ODAER(I,J,L,IWV,N) * &
-                                ( BCAE_1 + SCALESSA*SSAA(IWV,1,N) - &
-                                  SCALESSA*SSAA(IWV,1,N)*BCAE_1 )
+                                  ( Input_Opt%BCAE_1 + &
+                                    SCALESSA*SSAA(IWV,1,N) - &
+                                    SCALESSA*SSAA(IWV,1,N)*Input_Opt%BCAE_1 )
 
                       !now combine with hydrophilic OD as before
                       BCSCAT_AE = BCSCAT_AE + SSAA(IWV,1,N) * &
@@ -1683,7 +1817,8 @@ CONTAINS
                                   DAERSL(I,J,L,N-1) * QQAA(IWV,1,N)  / &
                                   ( MSDENS(N) * REAA(1,N) * 1.0D-6 )
                       ODAER(I,J,L,IWV,N)= ODAER(I,J,L,IWV,N) + &
-                           (BCAE_2+SSAA(IWV,1,N) - SSAA(IWV,1,N)*BCAE_2) * &
+                                  ( Input_Opt%BCAE_2+SSAA(IWV,1,N) - &
+                                    SSAA(IWV,1,N)*Input_Opt%BCAE_2 ) * &
                                   0.75d0 * BXHEIGHT(I,J,L) * &
                                   DAERSL(I,J,L,N-1) * QQAA(IWV,1,N)  / &
                                   ( MSDENS(N) * REAA(1,N) * 1.0D-6 )
@@ -1754,7 +1889,7 @@ CONTAINS
                 RTODAER(I,J,L,IWV,NRT)     = ODAER(I,J,L,IWV,N)
                 RTSSAER(I,J,L,IWV,NRT)     = SCALESSA*SSAA(IWV,1,N)
                 !for BC SSA with absorption enhancement (xnw 8/24/15)
-                IF ((N .EQ. 2) .AND. (LBCAE)) THEN
+                IF ( ( N .EQ. 2 ) .AND. ( Input_Opt%LBCAE ) ) THEN
                    RTSSAER(I,J,L,IWV,NRT)  = BCSCAT_AE / &
                                              ODAER(I,J,L,IWV,N)
                 ENDIF
@@ -2208,7 +2343,7 @@ CONTAINS
     ENDIF
 
     ! Turn off radiative effects of stratospheric aerosols?
-    IF ( .not. LSTRATOD ) THEN
+    IF ( .not. Input_Opt%LSTRATOD ) THEN
        ODAER(:,:,:,:,NRH+1) = 0.d0
        ODAER(:,:,:,:,NRH+2) = 0.d0
     ENDIF
@@ -2240,712 +2375,46 @@ CONTAINS
     !TAREA(:,NDUST+NRHAER+2) = 0.d0 !SPA
 
     ! Free pointers
-    NULLIFY( BXHEIGHT, ERADIUS, TAREA, WERADIUS, WTAREA, ACLRADIUS, ACLAREA )
+    BXHEIGHT    => NULL()
+    ERADIUS     => NULL()
+    TAREA       => NULL()
+    WERADIUS    => NULL()
+    WTAREA      => NULL()
+    ACLRADIUS   => NULL()
+    ACLAREA     => NULL()
+    OCFPOA      => NULL()
+    OCFOPOA     => NULL()
+    BCPI        => NULL()
+    BCPO        => NULL()
+    OCPI        => NULL()
+    OCPO        => NULL()
+    OCPISOA     => NULL()
+    SALA        => NULL()
+    ACL         => NULL()
+    SALC        => NULL()
+    SO4_NH4_NIT => NULL()
+    SO4         => NULL()
+    HMS         => NULL()
+    NH4         => NULL()
+    NIT         => NULL()
+    SLA         => NULL()
+    SPA         => NULL()
+    TSOA        => NULL()
+    ASOA        => NULL()
+    OPOA        => NULL()
+    SOAGX       => NULL()
+    PM25        => NULL()
+    PM10        => NULL()
+    ISOAAQ      => NULL()
+    SOAS        => NULL()
+    FRAC_SNA    => NULL()
+    DAERSL      => NULL()
+    WAERSL      => NULL()
 
     ! Reset first-time flag
     FIRST = .FALSE.
 
   END SUBROUTINE RDAER
 !EOC
-!------------------------------------------------------------------------------
-!                  GEOS-Chem Global Chemical Transport Model                  !
-!------------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: init_aerosol
-!
-! !DESCRIPTION: Subroutine INIT\_AEROSOL allocates and zeroes module arrays
-!\\
-!\\
-! !INTERFACE:
-!
-  SUBROUTINE Init_Aerosol( Input_Opt, State_Chm, State_Diag, State_Grid, RC )
-!
-! !USES:
-!
-    USE CMN_SIZE_MOD,   ONLY : NAER, NDUST
-    USE ErrCode_Mod
-    USE Input_Opt_Mod,  ONLY : OptInput
-    USE State_Chm_Mod,  ONLY : Ind_
-    USE State_Chm_Mod,  ONLY : ChmState
-    USE State_Diag_Mod, ONLY : DgnState
-    USE State_Grid_Mod, ONLY : GrdState
-!
-! !INPUT PARAMETERS:
-!
-    TYPE(OptInput), INTENT(IN)    :: Input_Opt   ! Input Options object
-    TYPE(GrdState), INTENT(IN)    :: State_Grid  ! Grid State object
-!
-! !INPUT/OUTPUT PARAMETERS:
-!
-    TYPE(ChmState), INTENT(INOUT) :: State_Chm   ! Chemistry State object
-    TYPE(DgnState), INTENT(INOUT) :: State_Diag  ! Diagnostics State object
-!
-! !OUTPUT PARAMETERS:
-!
-    INTEGER,        INTENT(OUT)   :: RC          ! Success or failure?
-!
-! !REVISION HISTORY:
-!  20 Jul 2004 - R. Yantosca - Initial version
-!  See https://github.com/geoschem/geos-chem for complete history
-!EOP
-!------------------------------------------------------------------------------
-!BOC
-!
-! !LOCAL VARIABLES:
-!
-    INTEGER            :: AS
-    CHARACTER(LEN=255) :: ErrMsg, ThisLoc
 
-    !=================================================================
-    ! INIT_AEROSOL begins here!
-    !=================================================================
-
-    ! Initialize
-    RC        = GC_SUCCESS
-    ErrMsg    = ''
-    ThisLoc   = ' -> at Init_Aerosol (in module GeosCore/aerosol_mod.F90)'
-
-    ! Exit immediately if this is a dry-run
-    IF ( Input_Opt%DryRun ) RETURN
-
-    ! Add tracer ID flags as module variables (bmy, 6/16/16)
-    id_BCPI   = Ind_( 'BCPI'   )
-    id_BCPO   = Ind_( 'BCPO'   )
-    id_DST1   = Ind_( 'DST1'   )
-    id_DST2   = Ind_( 'DST2'   )
-    id_DST3   = Ind_( 'DST3'   )
-    id_DST4   = Ind_( 'DST4'   )
-    id_DUST1  = Ind_( 'DUST1'  )
-    id_NH4    = Ind_( 'NH4'    )
-    id_NIT    = Ind_( 'NIT'    )
-    id_OCPO   = Ind_( 'OCPO'   )
-    id_OCPI   = Ind_( 'OCPI'   )
-    id_SOAS   = Ind_( 'SOAS'   )
-    id_SALA   = Ind_( 'SALA'   )
-    id_SALC   = Ind_( 'SALC'   )
-    id_SALACL = Ind_( 'SALACL' )
-    id_SO4    = Ind_( 'SO4'    )
-    id_SO4s   = Ind_( 'SO4s'   )
-    id_HMS    = Ind_( 'HMS'    )  ! (jmm, 06/30/18)
-    id_NITs   = Ind_( 'NITs'   )
-    id_POA1   = Ind_( 'POA1'   )
-    id_POA2   = Ind_( 'POA2'   )
-    id_OPOA1  = Ind_( 'OPOA1'  )
-    id_OPOA2  = Ind_( 'OPOA2'  )
-    id_TSOA1  = Ind_( 'TSOA1'  )
-    id_TSOA2  = Ind_( 'TSOA2'  )
-    id_TSOA3  = Ind_( 'TSOA3'  )
-    id_TSOA0  = Ind_( 'TSOA0'  )
-    id_ASOAN  = Ind_( 'ASOAN'  )
-    id_ASOA1  = Ind_( 'ASOA1'  )
-    id_ASOA2  = Ind_( 'ASOA2'  )
-    id_ASOA3  = Ind_( 'ASOA3'  )
-    id_SOAGX  = Ind_( 'SOAGX'  )
-    id_SOAIE  = Ind_( 'SOAIE'  )
-    id_INDIOL = Ind_( 'INDIOL' )
-    id_LVOCOA = Ind_( 'LVOCOA' )
-
-    !=================================================================
-    ! Allocate arrays
-    !=================================================================
-    ALLOCATE( BCPI( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    BCPI = 0.0_fp
-
-    ALLOCATE( BCPO( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:BCPO', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    BCPO = 0.0_fp
-
-    ALLOCATE( OCPI( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:OCPI', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    OCPI = 0.0_fp
-
-    ALLOCATE( OCPO( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:OCPO', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    OCPO = 0.0_fp
-
-    ALLOCATE( OCPISOA( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:OCPISOA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    OCPISOA = 0.0_fp
-
-    ALLOCATE( SALA( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:SALA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    SALA = 0.0_fp
-
-    ALLOCATE( SALC( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:SALC', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    SALC = 0.0_fp
-
-    ALLOCATE( ACL( State_Grid%NX, State_Grid%NY, State_Grid%NZ ),  STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F:ACL', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    ACL = 0.0_fp
-
-    ALLOCATE( SO4_NH4_NIT(State_Grid%NX,State_Grid%NY,State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:SO4_NH4_NIT', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    SO4_NH4_NIT = 0.0_fp
-
-    ALLOCATE( SO4( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:SO4', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    SO4 = 0.0_fp
-
-    ! (jmm, 06/30/18)
-    ALLOCATE( HMS( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F:HMS', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    HMS = 0.0_fp
-
-    ALLOCATE( NH4( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F:NH4', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    NH4 = 0.0_fp
-
-    ALLOCATE( NIT( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:NIT', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    NIT = 0.0_fp
-
-    ALLOCATE( FRAC_SNA( State_Grid%NX, State_Grid%NY, State_Grid%NZ, 3 ), &
-              STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:FRAC_SNA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    FRAC_SNA = 0.0_fp
-
-    ALLOCATE( SLA( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:SLA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    SLA = 0.0_fp
-
-    ALLOCATE( SPA( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:SPA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    SPA   = 0.0_fp
-
-    ALLOCATE( TSOA( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:TSOA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    TSOA = 0.0_fp
-
-    ALLOCATE( ASOA( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:ASOA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    ASOA = 0.0_fp
-
-    ALLOCATE( OPOA( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:OPOA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    OPOA = 0.0_fp
-
-    ALLOCATE( PM25( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:PM25', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    PM25 = 0.0_fp
-
-    !zhaisx
-    ALLOCATE( PM10( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:PM10', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    PM10 = 0.0_fp
-
-    ALLOCATE( SOAGX( State_Grid%NX, State_Grid%NY, State_Grid%NZ ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:SOAGX', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    SOAGX = 0.0_fp
-
-    ! Mass of hydrophobic aerosol from Mian Chin
-    ALLOCATE( DAERSL(State_Grid%NX,State_Grid%NY,State_Grid%NZ,2), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:DAERSL', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    DAERSL = 0.0_fp
-
-    ! Mass of hydrophilic aerosol from Mian Chin
-    ALLOCATE( WAERSL(State_Grid%NX,State_Grid%NY,State_Grid%NZ,NAER), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:WAERSL', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    WAERSL = 0.0_fp
-
-    ! Mechanistic isoprene SOA (eam, 2014):
-    ALLOCATE( ISOAAQ(State_Grid%NX,State_Grid%NY,State_Grid%NZ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:ISOAAQ', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    ISOAAQ = 0.0_fp
-
-    ! Simple SOA
-    ALLOCATE( SOAS(State_Grid%NX,State_Grid%NY,State_Grid%NZ), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:SOAS', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    SOAS = 0.0_fp
-
-    ! OM/OC for POA
-    ALLOCATE( OCFPOA(State_Grid%NX,State_Grid%NY), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:OCFPOA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    OCFPOA = 0.0_fp
-
-    ! OM/OC for OPOA, OCPI, OCPO
-    ALLOCATE( OCFOPOA(State_Grid%NX,State_Grid%NY), STAT=RC )
-    CALL GC_CheckVar( 'aerosol_mod.F90:OCFOPOA', 0, RC )
-    IF ( RC /= GC_SUCCESS ) RETURN
-    OCFOPOA = 0.0_fp
-
-  END SUBROUTINE INIT_AEROSOL
-!EOC
-!------------------------------------------------------------------------------
-!                  GEOS-Chem Global Chemical Transport Model                  !
-!------------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: cleanup_aerosol
-!
-! !DESCRIPTION: Subroutine CLEANUP\_AEROSOL deallocates all module arrays
-!  (bmy, 7/20/04)
-!\\
-!\\
-! !INTERFACE:
-!
-  SUBROUTINE CLEANUP_AEROSOL
-!
-! !REVISION HISTORY:
-!  20 Jul 2004 - R. Yantosca - Initial version
-!  See https://github.com/geoschem/geos-chem for complete history
-!EOP
-!------------------------------------------------------------------------------
-!BOC
-!
-    IF ( ALLOCATED( BCPI        ) ) DEALLOCATE( BCPI        )
-    IF ( ALLOCATED( BCPO        ) ) DEALLOCATE( BCPO        )
-    IF ( ALLOCATED( OCPI        ) ) DEALLOCATE( OCPI        )
-    IF ( ALLOCATED( OCPO        ) ) DEALLOCATE( OCPO        )
-    IF ( ALLOCATED( OCPISOA     ) ) DEALLOCATE( OCPISOA     )
-    IF ( ALLOCATED( SALA        ) ) DEALLOCATE( SALA        )
-    IF ( ALLOCATED( SALC        ) ) DEALLOCATE( SALC        )
-    IF ( ALLOCATED( ACL         ) ) DEALLOCATE( ACL         )
-    IF ( ALLOCATED( SO4_NH4_NIT ) ) DEALLOCATE( SO4_NH4_NIT )
-    IF ( ALLOCATED( SO4         ) ) DEALLOCATE( SO4         )
-    IF ( ALLOCATED( HMS         ) ) DEALLOCATE( HMS         ) ! (jmm, 06/30/18)
-    IF ( ALLOCATED( NH4         ) ) DEALLOCATE( NH4         )
-    IF ( ALLOCATED( NIT         ) ) DEALLOCATE( NIT         )
-    IF ( ALLOCATED( FRAC_SNA    ) ) DEALLOCATE( FRAC_SNA    )
-    IF ( ALLOCATED( SLA         ) ) DEALLOCATE( SLA         )
-    IF ( ALLOCATED( SPA         ) ) DEALLOCATE( SPA         )
-    IF ( ALLOCATED( TSOA        ) ) DEALLOCATE( TSOA        )
-    IF ( ALLOCATED( ASOA        ) ) DEALLOCATE( ASOA        )
-    IF ( ALLOCATED( OPOA        ) ) DEALLOCATE( OPOA        )
-    IF ( ALLOCATED( SOAGX       ) ) DEALLOCATE( SOAGX       )
-    IF ( ALLOCATED( PM25        ) ) DEALLOCATE( PM25        )
-    IF ( ALLOCATED( PM10        ) ) DEALLOCATE( PM10        )!zhaisx
-    IF ( ALLOCATED( WAERSL      ) ) DEALLOCATE( WAERSL      )
-    IF ( ALLOCATED( DAERSL      ) ) DEALLOCATE( DAERSL      )
-    IF ( ALLOCATED( ISOAAQ      ) ) DEALLOCATE( ISOAAQ      )
-    IF ( ALLOCATED( SOAS        ) ) DEALLOCATE( SOAS        )
-    IF ( ALLOCATED( OCFPOA      ) ) DEALLOCATE( OCFPOA      )
-    IF ( ALLOCATED( OCFOPOA     ) ) DEALLOCATE( OCFOPOA     )
-
-  END SUBROUTINE CLEANUP_AEROSOL
-!EOC
-!------------------------------------------------------------------------------
-!                  GEOS-Chem Global Chemical Transport Model                  !
-!------------------------------------------------------------------------------
-!BOP
-!
-! !IROUTINE: set_aermass_diagnostic
-!
-! !DESCRIPTION: Computes the aerosol mass diagnostic (formerly ND42 bpch
-!  diagnostic).
-!\\
-!\\
-! !INTERFACE:
-!
-  SUBROUTINE Set_AerMass_Diagnostic( Input_Opt,  State_Chm, State_Diag, &
-                                     State_Grid, State_Met, RC )
-!
-! !USES:
-!
-    USE ErrCode_Mod
-    USE Input_Opt_Mod,  ONLY : OptInput
-    USE Species_Mod,    ONLY : Species, SpcConc
-    USE State_Chm_Mod,  ONLY : ChmState
-    USE State_Chm_Mod,  ONLY : Ind_
-    USE State_Diag_Mod, ONLY : DgnState
-    USE State_Grid_Mod, ONLY : GrdState
-    USE State_Met_Mod,  ONLY : MetState
-    USE PhysConstants,  ONLY : MwCarb
-    USE UnitConv_Mod,   ONLY : Convert_Spc_Units
-!
-! !INPUT PARAMETERS:
-!
-    TYPE(OptInput),   INTENT(IN)    :: Input_Opt   ! Input Options object
-    TYPE(ChmState),   INTENT(IN)    :: State_Chm   ! Chemistry State object
-    TYPE(GrdState),   INTENT(IN)    :: State_Grid  ! Grid State object
-    TYPE(MetState),   INTENT(IN)    :: State_Met   ! Meteorology State object
-!
-! !INPUT/OUTPUT PARAMETERS:
-!
-    TYPE(DgnState),   INTENT(INOUT) :: State_Diag  ! Diagnostic State object
-!
-! !OUTPUT PARAMETERS:
-!
-    INTEGER,          INTENT(OUT)   :: RC          ! Success or failure?
-!
-! !REMARKS:
-!  NOTE: This diagnostic mimics the bpch diagnostic routine "DIAG42".
-!
-! !REVISION HISTORY:
-!  05 Feb 2018 - R. Yantosca - Initial version
-!  See https://github.com/geoschem/geos-chem for complete history
-!EOP
-!------------------------------------------------------------------------------
-!BOC
-!
-! !LOCAL VARIABLES:
-!
-    ! SAVEd scalars
-    LOGICAL                  :: First = .TRUE.
-
-    ! Scalars
-    INTEGER                  :: I, J, L
-
-    ! Strings
-    CHARACTER(LEN=63)        :: OrigUnit
-    CHARACTER(LEN=255)       :: ThisLoc
-    CHARACTER(LEN=512)       :: ErrMsg
-
-    ! Pointers
-    REAL(fp),      POINTER   :: AirDen(:,:,:  )
-    TYPE(SpcConc), POINTER   :: Spc   (:      )
-    TYPE(Species), POINTER   :: SpcInfo
-!
-! !DEFINED PARAMETERS:
-!
-    ! Convert [kg/m3] to [ug/m3]
-    REAL(fp),      PARAMETER :: kgm3_to_ugm3 = 1.0e+9_fp
-
-    ! Define number of carbon atoms in each irreversible isoprene
-    ! SOA tracer species. Named according to the parent HC (same
-    ! number of carbons):
-    REAL(fp),      PARAMETER :: NCIMAE   = 4e+0_fp
-    REAL(fp),      PARAMETER :: NCIEPOX  = 5e+0_fp
-    REAL(fp),      PARAMETER :: NCINDIOL = NCIEPOX
-    REAL(fp),      PARAMETER :: NCGLYX   = 2e+0_fp
-    REAL(fp),      PARAMETER :: NCGLYC   = NCGLYX
-    REAL(fp),      PARAMETER :: NCMGLY   = 3e+0_fp
-    REAL(fp),      PARAMETER :: NCLVOC   = NCIEPOX
-    REAL(fp),      PARAMETER :: NCISN1   = NCIEPOX
-
-    !=======================================================================
-    ! Set_AerMass_Diagnostic begins here!
-    !=======================================================================
-
-    ! Initialize
-    RC       = GC_SUCCESS
-    ErrMsg   = ''
-    ThisLoc  = ' -> at Set_AerMass_Diagnostic (in module GeosCore/aerosol_mod.F90)'
-
-    ! Check that species units are kg/kg dry air
-    IF ( TRIM( State_Chm%Spc_Units ) /= 'kg/kg dry' ) THEN
-       CALL GC_Error( 'Incorrect species units: ' // &
-                      State_Chm%Spc_Units, RC, ThisLoc )
-       RETURN
-    ENDIF
-
-    ! Define species ID flags for the aerosol mass diagnostics
-    IF ( First ) THEN
-
-       !--------------------------------------------------------------------
-       ! Look up species indices in State_Chm%SPECIES
-       !--------------------------------------------------------------------
-       id_INDIOL  = Ind_( 'INDIOL' )
-       id_LVOCOA  = Ind_( 'LVOCOA' )
-       id_POA1    = Ind_( 'POA1'   )
-       id_POA2    = Ind_( 'POA2'   )
-       id_OPOA1   = Ind_( 'OPOA1'  )
-       id_OPOA2   = Ind_( 'OPOA2'  )
-       id_SOAGX   = Ind_( 'SOAGX'  )
-       id_SOAIE   = Ind_( 'SOAIE'  )
-       Is_POA     = ( id_POA1  > 0 .and. id_POA2  > 0 )
-       Is_OPOA    = ( id_OPOA1 > 0 .and. id_OPOA2 > 0 )
-
-       ! Initialize conversion factors for total OC diagnostic
-       Fac_INDIOL = 0.0_fp
-       Fac_LVOCOA = 0.0_fp
-       Fac_SOAGX  = 0.0_fp
-       Fac_SOAIE  = 0.0_fp
-
-       !--------------------------------------------------------------------
-       ! Set conversion factors for certain isoprene SOA species,
-       ! or, if they aren't present, disable their diagnostics
-       !--------------------------------------------------------------------
-       IF ( id_INDIOL > 0 ) THEN
-          SpcInfo    => State_Chm%SpcData(id_INDIOL)%Info
-          Fac_INDIOL =  ( NCINDIOL  * MwCarb / ( SpcInfo%Mw_g * 1e-3_fp ) )
-          SpcInfo    => NULL()
-       ELSE
-          IF ( State_Diag%Archive_AerMassINDIOL ) THEN
-             State_Diag%Archive_AerMassINDIOL = .FALSE.
-             ErrMsg = 'Disabling AerMassINDIOL diagnostic. ' // &
-                      'INDIOL is not a defined species for this simulation.'
-             CALL GC_Warning( ErrMsg, RC, ThisLoc )
-          ENDIF
-       ENDIF
-
-       IF ( id_LVOCOA > 0  ) THEN
-          SpcInfo    => State_Chm%SpcData(id_LVOCOA)%Info
-          Fac_LVOCOA = ( NCLVOC * MwCarb / ( SpcInfo%Mw_G * 1e-3_fp ) )
-          SpcInfo    => NULL()
-       ELSE
-          IF ( State_Diag%Archive_AerMassLVOCOA ) THEN
-             State_Diag%Archive_AerMassLVOCOA = .FALSE.
-             ErrMsg = 'Disabling AerMassLVOCOA diagnostic. ' // &
-                      'LVOCOA is not a defined species for this simulation.'
-             CALL GC_Warning( ErrMsg, RC, ThisLoc )
-          ENDIF
-       ENDIF
-
-       IF ( id_SOAGX > 0 ) THEN
-          SpcInfo    => State_Chm%SpcData(id_SOAGX)%Info
-          Fac_SOAGX  = ( NCGLYX * MwCarb / ( SpcInfo%Mw_g * 1e-3_fp ) )
-          SpcInfo    => NULL()
-       ELSE
-          IF ( State_Diag%Archive_AerMassSOAGX ) THEN
-             State_Diag%Archive_AerMassSOAGX = .FALSE.
-             ErrMsg = 'Disabling AerMassSOAGX diagnostic.' // &
-                      'SOAGX is not a defined species for this simulation.'
-             CALL GC_Warning( ErrMsg, RC, ThisLoc )
-          ENDIF
-       ENDIF
-
-       IF ( id_SOAIE > 0 ) THEN
-          SpcInfo    => State_Chm%SpcData(id_SOAIE)%Info
-          Fac_SOAIE  =  ( NCIEPOX * MwCarb / ( SpcInfo%Mw_g * 1e-3_fp ) )
-          SpcInfo    => NULL()
-       ELSE
-          IF ( State_Diag%Archive_AerMassSOAIE ) THEN
-             State_Diag%Archive_AerMassSOAIE = .FALSE.
-             ErrMsg = 'Disabling AerMassSOAIE diagnostic. ' // &
-                      'SOAIE is not a defined species for this simulation.'
-             CALL GC_Warning( ErrMsg, RC, ThisLoc )
-          ENDIF
-       ENDIF
-
-       ! Reset first-time flag
-       First = .FALSE.
-    ENDIF
-
-    !=======================================================================
-    ! Compute Aerosol mass and PM2.5 diagnostics using concentrations
-    ! from the end of the chemistry timestep, which should be more
-    ! consistent with the legacy ND42 bpch diagnostics
-    !=======================================================================
-
-    ! Point to fields of State_Chm and State_Met
-    Spc    => State_Chm%Species
-    AirDen => State_Met%AIRDEN
-
-    ! Zero out the totalOC diagnostic
-    IF ( State_Diag%Archive_TotalOC ) THEN
-       State_Diag%TotalOC = 0.0_fp
-    ENDIF
-
-    !$OMP PARALLEL DO         &
-    !$OMP DEFAULT( SHARED   ) &
-    !$OMP PRIVATE( I, J, L  )
-    DO L = 1, State_Grid%NZ
-    DO J = 1, State_Grid%NY
-    DO I = 1, State_Grid%NX
-
-       !--------------------------------------
-       ! AerMassASOA [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassASOA ) THEN
-          State_Diag%AerMassASOA(I,J,L) = ASOA(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassBC [ug C/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassBC ) THEN
-          State_Diag%AerMassBC(I,J,L) = ( BCPI(I,J,L) + BCPO(I,J,L) ) * &
-                                          kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassINDIOL [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassINDIOL ) THEN
-          State_Diag%AerMassINDIOL(I,J,L) = Spc(id_INDIOL)%Conc(I,J,L) * &
-                                            kgm3_to_ugm3 * AirDen(I,J,L)
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassLVOCOA [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassLVOCOA ) THEN
-          State_Diag%AerMassLVOCOA(I,J,L) = Spc(id_LVOCOA)%Conc(I,J,L) * &
-                                            kgm3_to_ugm3 * AirDen(I,J,L)
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassNH4 [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassNH4 ) THEN
-          State_Diag%AerMassNH4(I,J,L) = NH4(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassNIT [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassNIT ) THEN
-          State_Diag%AerMassNIT(I,J,L) = NIT(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassOPOA [ug/m3], OA:OC=2.1
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassOPOA ) THEN
-          State_Diag%AerMassOPOA(I,J,L) = OPOA(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassPOA [ug/m3], OA:OC=2.1
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassPOA ) THEN
-          IF ( Is_POA ) THEN
-             State_Diag%AerMassPOA(I,J,L) = OCPO(I,J,L) * kgm3_to_ugm3
-          ELSE
-             State_Diag%AerMassPOA(I,J,L) = ( OCPI(I,J,L) + OCPO(I,J,L) ) * &
-                                              kgm3_to_ugm3
-          ENDIF
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassSAL [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassSAL ) THEN
-          State_Diag%AerMassSAL(I,J,L) = ( SALA(I,J,L) + SALC(I,J,L) ) * &
-                                           kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassSO4 [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassSO4 ) THEN
-          State_Diag%AerMassSO4(I,J,L) = SO4(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassHMS [ug/m3]
-       ! jmm 3/6/19
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassHMS ) THEN
-          State_Diag%AerMassHMS(I,J,L) = HMS(I,J,L) * &
-               kgm3_to_ugm3
-       ENDIF
-
-
-       !--------------------------------------
-       ! AerMassSOAGX [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassSOAGX ) THEN
-          State_Diag%AerMassSOAGX(I,J,L) = SOAGX(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassSOAIE [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassSOAIE ) THEN
-          State_Diag%AerMassSOAIE(I,J,L) = Spc(id_SOAIE)%Conc(I,J,L) * &
-                                           kgm3_to_ugm3 * AirDen(I,J,L)
-       ENDIF
-
-       !--------------------------------------
-       ! AerMassTSOA [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_AerMassTSOA ) THEN
-          State_Diag%AerMassTSOA(I,J,L) = TSOA(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! PM25 [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_PM25 ) THEN
-          State_Diag%PM25(I,J,L) = PM25(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! PM10 [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_PM10 ) THEN
-          State_Diag%PM10(I,J,L) = PM10(I,J,L) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! Sum of all biogenic organic aerosol
-       !--------------------------------------
-       IF ( State_Diag%Archive_TotalBiogenicOA ) THEN
-          State_Diag%TotalBiogenicOA(I,J,L) = ( TSOA(I,J,L) + ISOAAQ(I,J,L) ) &
-                                                * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! Sum of all organic aerosol [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_TotalOA ) THEN
-          State_Diag%TotalOA(I,J,L) = ( TSOA(I,J,L) + &
-                                        ASOA(I,J,L) + &
-                                        OCPO(I,J,L) + &
-                                        OCPI(I,J,L) + &
-                                        OPOA(I,J,L) + &
-                                        ISOAAQ(I,J,L) ) * kgm3_to_ugm3
-       ENDIF
-
-       !--------------------------------------
-       ! Sum of all organic carbon [ug/m3]
-       !--------------------------------------
-       IF ( State_Diag%Archive_TotalOC ) THEN
-
-          IF ( Is_POA ) THEN
-             State_Diag%TotalOC(I,J,L) = &
-                  ( ( TSOA(I,J,L) + ASOA(I,J,L) &
-                    + OCPI(I,J,L) + OPOA(I,J,L) ) / OCFOPOA(I,J) &
-                    + OCPO(I,J,L) / OCFPOA(I,J) ) * kgm3_to_ugm3
-
-          ELSE IF ( IS_OPOA ) THEN
-             State_Diag%TotalOC(I,J,L) = &
-                  ( ( TSOA(I,J,L) + ASOA(I,J,L) &
-                    + OCPO(I,J,L) + OCPI(I,J,L) + OPOA(I,J,L) ) &
-                    / OCFOPOA(I,J) ) * kgm3_to_ugm3
-          ENDIF
-
-          IF ( Input_Opt%LSOA ) THEN
-             State_Diag%TotalOC(I,J,L) =  State_Diag%TotalOC(I,J,L) + &
-                  ( ( Spc(id_SOAIE )%Conc(I,J,L) * Fac_SOAIE  ) + &
-                    ( Spc(id_INDIOL)%Conc(I,J,L) * Fac_INDIOL ) + &
-                    ( Spc(id_SOAGX )%Conc(I,J,L) * Fac_SOAGX  ) + &
-                    ( Spc(id_LVOCOA)%Conc(I,J,L) * Fac_LVOCOA ) ) &
-                    * AirDen(I,J,L) * kgm3_to_ugm3
-          ENDIF
-
-       ENDIF
-
-    ENDDO
-    ENDDO
-    ENDDO
-    !$OMP END PARALLEL DO
-
-    ! Free pointers
-    Spc      => NULL()
-    AirDen   => NULL()
-
-  END SUBROUTINE Set_AerMass_Diagnostic
-!EOC
 END MODULE AEROSOL_MOD

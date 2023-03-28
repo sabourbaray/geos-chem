@@ -410,7 +410,6 @@ CONTAINS
 !
 ! !USES:
 !
-    USE Aerosol_Mod,        ONLY : Init_Aerosol
     USE Carbon_Mod,         ONLY : Init_Carbon
     USE Carbon_Gases_Mod,   ONLY : Init_Carbon_Gases
     USE CO2_Mod,            ONLY : Init_CO2
@@ -626,19 +625,6 @@ CONTAINS
        CALL Init_Sulfate( Input_Opt, State_Chm, State_Diag, State_Grid, RC )
        IF ( RC /= GC_SUCCESS ) THEN
           ErrMsg = 'Error encountered in "Init_Sulfate"!'
-          CALL GC_Error( ErrMsg, RC, ThisLoc )
-          RETURN
-       ENDIF
-    ENDIF
-
-    !-----------------------------------------------------------------
-    ! Initialize "aerosol_mod.F90"
-    !-----------------------------------------------------------------
-    IF ( Input_Opt%LSULF .or. Input_Opt%LCARB    .or. &
-         Input_Opt%LDUST .or. Input_Opt%LSSALT ) THEN
-       CALL Init_Aerosol( Input_Opt, State_Chm, State_Diag, State_Grid, RC )
-       IF ( RC /= GC_SUCCESS ) THEN
-          ErrMsg = 'Error encountered in "Init_Aerosol"!'
           CALL GC_Error( ErrMsg, RC, ThisLoc )
           RETURN
        ENDIF
