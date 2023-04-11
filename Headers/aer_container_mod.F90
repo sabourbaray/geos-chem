@@ -61,37 +61,33 @@ MODULE Aer_Container_Mod
      ! ISOAAQ      : Isoprene SOA (aqueous formation)   [kg/m3]
      ! SOAS        : Simple SOA                         [kg/m3]
      ! FRAC_SNA    :
-     ! DAERSL      : Mass of hydrophobic aerosol (Mian Chin)
-     ! WAERSL      : Mass of hydrophilic aerosol (Mian Chin)
      !========================================================================
-     REAL(fp), ALLOCATABLE :: OCFPOA     (:,:)
-     REAL(fp), ALLOCATABLE :: OCFOPOA    (:,:)
-     REAL(fp), ALLOCATABLE :: BCPI       (:,:,:)
-     REAL(fp), ALLOCATABLE :: BCPO       (:,:,:)
-     REAL(fp), ALLOCATABLE :: OCPI       (:,:,:)
-     REAL(fp), ALLOCATABLE :: OCPO       (:,:,:)
+     REAL(fp), ALLOCATABLE :: OCFPOA     (:,:)    ! AerMass
+     REAL(fp), ALLOCATABLE :: OCFOPOA    (:,:)    ! AerMass
+     REAL(fp), ALLOCATABLE :: BCPI       (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: BCPO       (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: OCPI       (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: OCPO       (:,:,:)  ! AerMass
      REAL(fp), ALLOCATABLE :: OCPISOA    (:,:,:)
-     REAL(fp), ALLOCATABLE :: SALA       (:,:,:)
+     REAL(fp), ALLOCATABLE :: SALA       (:,:,:)  ! AerMass
      REAL(fp), ALLOCATABLE :: ACL        (:,:,:)
-     REAL(fp), ALLOCATABLE :: SALC       (:,:,:)
+     REAL(fp), ALLOCATABLE :: SALC       (:,:,:)  ! AerMass
      REAL(fp), ALLOCATABLE :: SO4_NH4_NIT(:,:,:)
-     REAL(fp), ALLOCATABLE :: SO4        (:,:,:)
-     REAL(fp), ALLOCATABLE :: HMS        (:,:,:)
-     REAL(fp), ALLOCATABLE :: NH4        (:,:,:)
-     REAL(fp), ALLOCATABLE :: NIT        (:,:,:)
+     REAL(fp), ALLOCATABLE :: SO4        (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: HMS        (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: NH4        (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: NIT        (:,:,:)  ! AerMass
      REAL(fp), ALLOCATABLE :: SLA        (:,:,:)
      REAL(fp), ALLOCATABLE :: SPA        (:,:,:)
-     REAL(fp), ALLOCATABLE :: TSOA       (:,:,:)
-     REAL(fp), ALLOCATABLE :: ASOA       (:,:,:)
-     REAL(fp), ALLOCATABLE :: OPOA       (:,:,:)
-     REAL(fp), ALLOCATABLE :: SOAGX      (:,:,:)
-     REAL(fp), ALLOCATABLE :: PM25       (:,:,:)
-     REAL(fp), ALLOCATABLE :: PM10       (:,:,:)
-     REAL(fp), ALLOCATABLE :: ISOAAQ     (:,:,:)
+     REAL(fp), ALLOCATABLE :: TSOA       (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: ASOA       (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: OPOA       (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: SOAGX      (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: PM25       (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: PM10       (:,:,:)  ! AerMass
+     REAL(fp), ALLOCATABLE :: ISOAAQ     (:,:,:)  ! AerMass
      REAL(fp), ALLOCATABLE :: SOAS       (:,:,:)
      REAL(fp), ALLOCATABLE :: FRAC_SNA   (:,:,:,:)
-     REAL(fp), ALLOCATABLE :: DAERSL     (:,:,:,:)
-     REAL(fp), ALLOCATABLE :: WAERSL     (:,:,:,:)
 
   END TYPE AerContainer
 !
@@ -385,24 +381,6 @@ CONTAINS
     ENDIF
     Aer%FRAC_SNA = 0.0_fp
 
-    ! Mass of hydrophobic aerosol from Mian Chin
-    ALLOCATE( Aer%DAERSL( NX, NY, NZ, 2 ), STAT=RC )
-    IF ( RC /= GC_SUCCESS ) THEN
-       errMsg = 'Error allocating array DAERSL!'
-       CALL GC_Error( errMsg, RC, thisLoc )
-       RETURN
-    ENDIF
-    Aer%DAERSL = 0.0_fp
-
-    ! Mass of hydrophilic aerosol from Mian Chin
-    ALLOCATE( Aer%WAERSL( NX, NY, NZ, NAER ), STAT=RC )
-    IF ( RC /= GC_SUCCESS ) THEN
-       errMsg = 'Error allocating array WAERSL!'
-       CALL GC_Error( errMsg, RC, thisLoc )
-       RETURN
-    ENDIF
-    Aer%WAERSL = 0.0_fp
-
   END SUBROUTINE Init_Aer_Container
 !EOC
 !------------------------------------------------------------------------------
@@ -470,8 +448,6 @@ CONTAINS
        IF (ALLOCATED(Aer%ISOAAQ       )) DEALLOCATE(Aer%ISOAAQ       )
        IF (ALLOCATED(Aer%SOAS         )) DEALLOCATE(Aer%SOAS         )
        IF (ALLOCATED(Aer%FRAC_SNA     )) DEALLOCATE(Aer%FRAC_SNA     )
-       IF (ALLOCATED(Aer%DAERSL       )) DEALLOCATE(Aer%DAERSL       )
-       IF (ALLOCATED(Aer%WAERSL       )) DEALLOCATE(Aer%WAERSL       )
        Aer => NULL()
     ENDIF
 

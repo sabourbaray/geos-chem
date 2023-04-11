@@ -1737,17 +1737,12 @@ CONTAINS
     REAL(fp),      POINTER :: BCPO        (:,:,:)
     REAL(fp),      POINTER :: OCPI        (:,:,:)
     REAL(fp),      POINTER :: OCPO        (:,:,:)
-    REAL(fp),      POINTER :: OCPISOA     (:,:,:)
     REAL(fp),      POINTER :: SALA        (:,:,:)
-    REAL(fp),      POINTER :: ACL         (:,:,:)
     REAL(fp),      POINTER :: SALC        (:,:,:)
-    REAL(fp),      POINTER :: SO4_NH4_NIT (:,:,:)
     REAL(fp),      POINTER :: SO4         (:,:,:)
     REAL(fp),      POINTER :: HMS         (:,:,:)
     REAL(fp),      POINTER :: NH4         (:,:,:)
     REAL(fp),      POINTER :: NIT         (:,:,:)
-    REAL(fp),      POINTER :: SLA         (:,:,:)
-    REAL(fp),      POINTER :: SPA         (:,:,:)
     REAL(fp),      POINTER :: TSOA        (:,:,:)
     REAL(fp),      POINTER :: ASOA        (:,:,:)
     REAL(fp),      POINTER :: OPOA        (:,:,:)
@@ -1755,10 +1750,6 @@ CONTAINS
     REAL(fp),      POINTER :: PM25        (:,:,:)
     REAL(fp),      POINTER :: PM10        (:,:,:)
     REAL(fp),      POINTER :: ISOAAQ      (:,:,:)
-    REAL(fp),      POINTER :: SOAS        (:,:,:)
-    REAL(fp),      POINTER :: FRAC_SNA    (:,:,:,:)
-    REAL(fp),      POINTER :: DAERSL      (:,:,:,:)
-    REAL(fp),      POINTER :: WAERSL      (:,:,:,:)
 
     ! Conversionf factors to ugC/m3 for Total Organic Carbon diagnostic
     REAL(fp), SAVE :: Fac_INDIOL
@@ -1805,17 +1796,12 @@ CONTAINS
     BCPO        => State_Chm%Aer%BCPO
     OCPI        => State_Chm%Aer%OCPI
     OCPO        => State_Chm%Aer%OCPO
-    OCPISOA     => State_Chm%Aer%OCPISOA
     SALA        => State_Chm%Aer%SALA
-    ACL         => State_Chm%Aer%ACL
     SALC        => State_Chm%Aer%SALC
-    SO4_NH4_NIT => State_Chm%Aer%SO4_NH4_NIT
     SO4         => State_Chm%Aer%SO4
     HMS         => State_Chm%Aer%HMS
     NH4         => State_Chm%Aer%NH4
     NIT         => State_Chm%Aer%NIT
-    SLA         => State_Chm%Aer%SLA
-    SPA         => State_Chm%Aer%SPA
     TSOA        => State_Chm%Aer%TSOA
     ASOA        => State_Chm%Aer%ASOA
     OPOA        => State_Chm%Aer%OPOA
@@ -1823,10 +1809,6 @@ CONTAINS
     PM25        => State_Chm%Aer%PM25
     PM10        => State_Chm%Aer%PM10
     ISOAAQ      => State_Chm%Aer%ISOAAQ
-    SOAS        => State_Chm%Aer%SOAS
-    FRAC_SNA    => State_Chm%Aer%FRAC_SNA
-    DAERSL      => State_Chm%Aer%DAERSL
-    WAERSL      => State_Chm%Aer%WAERSL
 
     ! Check that species units are kg/kg dry air
     IF ( TRIM( State_Chm%Spc_Units ) /= 'kg/kg dry' ) THEN
@@ -2128,17 +2110,12 @@ CONTAINS
     BCPO        => NULL()
     OCPI        => NULL()
     OCPO        => NULL()
-    OCPISOA     => NULL()
     SALA        => NULL()
-    ACL         => NULL()
     SALC        => NULL()
-    SO4_NH4_NIT => NULL()
     SO4         => NULL()
     HMS         => NULL()
     NH4         => NULL()
     NIT         => NULL()
-    SLA         => NULL()
-    SPA         => NULL()
     TSOA        => NULL()
     ASOA        => NULL()
     OPOA        => NULL()
@@ -2146,10 +2123,6 @@ CONTAINS
     PM25        => NULL()
     PM10        => NULL()
     ISOAAQ      => NULL()
-    SOAS        => NULL()
-    FRAC_SNA    => NULL()
-    DAERSL      => NULL()
-    WAERSL      => NULL()
 
   END SUBROUTINE Set_AerMass_Diagnostic
 !EOC

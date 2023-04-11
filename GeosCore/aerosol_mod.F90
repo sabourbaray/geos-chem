@@ -29,10 +29,6 @@ MODULE AEROSOL_MOD
 !
 ! !PUBLIC DATA MEMBERS:
 !
-  ! Growth factors
-  REAL(fp),              PUBLIC :: SIA_GROWTH
-  REAL(fp),              PUBLIC :: ORG_GROWTH
-  REAL(fp),              PUBLIC :: SSA_GROWTH
 !
 ! !DEFINED PARAMETERS:
 !
@@ -149,6 +145,11 @@ CONTAINS
     LOGICAL, SAVE :: Is_SimpleSOA
     LOGICAL, SAVE :: Is_ComplexSOA
 
+    ! Growth factors
+    REAL(fp), SAVE :: SIA_GROWTH
+    REAL(fp), SAVE :: ORG_GROWTH
+    REAL(fp), SAVE :: SSA_GROWTH
+
     ! Non-SAVEd variables
     INTEGER             :: I, J, L, N, NA, ND, K
     INTEGER             :: k_SO4
@@ -160,39 +161,39 @@ CONTAINS
 
     ! Pointer to species
     TYPE(SpcConc), POINTER :: Spc         (:)
-    REAL(fp),      POINTER :: AIRVOL      (:,:,:)
-    REAL(fp),      POINTER :: PMID        (:,:,:)
-    REAL(fp),      POINTER :: T           (:,:,:)
-    REAL(fp),      POINTER :: SOILDUST    (:,:,:,:)
-    REAL(fp),      POINTER :: KG_STRAT_AER(:,:,:,:)
-    REAL(fp),      POINTER :: OCFPOA      (:,:)
-    REAL(fp),      POINTER :: OCFOPOA     (:,:)
-    REAL(fp),      POINTER :: BCPI        (:,:,:)
-    REAL(fp),      POINTER :: BCPO        (:,:,:)
-    REAL(fp),      POINTER :: OCPI        (:,:,:)
-    REAL(fp),      POINTER :: OCPO        (:,:,:)
-    REAL(fp),      POINTER :: OCPISOA     (:,:,:)
-    REAL(fp),      POINTER :: SALA        (:,:,:)
-    REAL(fp),      POINTER :: ACL         (:,:,:)
-    REAL(fp),      POINTER :: SALC        (:,:,:)
-    REAL(fp),      POINTER :: SO4_NH4_NIT (:,:,:)
-    REAL(fp),      POINTER :: SO4         (:,:,:)
-    REAL(fp),      POINTER :: HMS         (:,:,:)
-    REAL(fp),      POINTER :: NH4         (:,:,:)
-    REAL(fp),      POINTER :: NIT         (:,:,:)
-    REAL(fp),      POINTER :: SLA         (:,:,:)
-    REAL(fp),      POINTER :: SPA         (:,:,:)
-    REAL(fp),      POINTER :: TSOA        (:,:,:)
-    REAL(fp),      POINTER :: ASOA        (:,:,:)
-    REAL(fp),      POINTER :: OPOA        (:,:,:)
-    REAL(fp),      POINTER :: SOAGX       (:,:,:)
-    REAL(fp),      POINTER :: PM25        (:,:,:)
-    REAL(fp),      POINTER :: PM10        (:,:,:)
-    REAL(fp),      POINTER :: ISOAAQ      (:,:,:)
-    REAL(fp),      POINTER :: SOAS        (:,:,:)
-    REAL(fp),      POINTER :: FRAC_SNA    (:,:,:,:)
-    REAL(fp),      POINTER :: DAERSL      (:,:,:,:)
-    REAL(fp),      POINTER :: WAERSL      (:,:,:,:)
+
+    ! Pointers to other state variables
+    REAL(fp), POINTER :: AIRVOL      (:,:,:)
+    REAL(fp), POINTER :: PMID        (:,:,:)
+    REAL(fp), POINTER :: T           (:,:,:)
+    REAL(fp), POINTER :: SOILDUST    (:,:,:,:)
+    REAL(fp), POINTER :: KG_STRAT_AER(:,:,:,:)
+    REAL(fp), POINTER :: OCFPOA      (:,:)
+    REAL(fp), POINTER :: OCFOPOA     (:,:)
+    REAL(fp), POINTER :: BCPI        (:,:,:) ! rdaer
+    REAL(fp), POINTER :: BCPO        (:,:,:) ! rdaer
+    REAL(fp), POINTER :: OCPI        (:,:,:)
+    REAL(fp), POINTER :: OCPO        (:,:,:) ! rdaer
+    REAL(fp), POINTER :: OCPISOA     (:,:,:) ! rdaer
+    REAL(fp), POINTER :: SALA        (:,:,:) ! rdaer
+    REAL(fp), POINTER :: ACL         (:,:,:)
+    REAL(fp), POINTER :: SALC        (:,:,:) ! rdaer
+    REAL(fp), POINTER :: SO4_NH4_NIT (:,:,:) ! rdaer
+    REAL(fp), POINTER :: SO4         (:,:,:)
+    REAL(fp), POINTER :: HMS         (:,:,:)
+    REAL(fp), POINTER :: NH4         (:,:,:)
+    REAL(fp), POINTER :: NIT         (:,:,:)
+    REAL(fp), POINTER :: SLA         (:,:,:) ! rdaer
+    REAL(fp), POINTER :: SPA         (:,:,:) ! rdaer
+    REAL(fp), POINTER :: TSOA        (:,:,:)
+    REAL(fp), POINTER :: ASOA        (:,:,:)
+    REAL(fp), POINTER :: OPOA        (:,:,:)
+    REAL(fp), POINTER :: SOAGX       (:,:,:)
+    REAL(fp), POINTER :: PM25        (:,:,:)
+    REAL(fp), POINTER :: PM10        (:,:,:)
+    REAL(fp), POINTER :: ISOAAQ      (:,:,:) ! rdaer
+    REAL(fp), POINTER :: SOAS        (:,:,:)
+    REAL(fp), POINTER :: FRAC_SNA    (:,:,:,:) ! rdaer
 
     ! Other variables
     CHARACTER(LEN=63)   :: OrigUnit
@@ -318,9 +319,9 @@ CONTAINS
     PM10        => State_Chm%Aer%PM10
     ISOAAQ      => State_Chm%Aer%ISOAAQ
     SOAS        => State_Chm%Aer%SOAS
+#ifdef RRTMG
     FRAC_SNA    => State_Chm%Aer%FRAC_SNA
-    DAERSL      => State_Chm%Aer%DAERSL
-    WAERSL      => State_Chm%Aer%WAERSL
+#endif
 
     !=================================================================
     ! OM/OC ratio
@@ -513,6 +514,7 @@ CONTAINS
              SPA(I,J,L) = KG_STRAT_AER(I,J,L,2) / AIRVOL(I,J,L)
           ENDIF
 
+#ifdef RRTMG
           ! Add error check for safe division (bmy, 4/7/15)
           IF ( SO4_NH4_NIT(I,J,L) > 0e+0_fp ) THEN
 
@@ -546,6 +548,7 @@ CONTAINS
              FRAC_SNA(I,J,L,3) = 0e+0_fp
 
           ENDIF
+#endif
 
        ENDIF
 
@@ -1051,10 +1054,9 @@ CONTAINS
     PM10        => NULL()
     ISOAAQ      => NULL()
     SOAS        => NULL()
+#ifdef RRTMG
     FRAC_SNA    => NULL()
-    DAERSL      => NULL()
-    WAERSL      => NULL()
-
+#endif
 
   END SUBROUTINE AEROSOL_CONC
 !EOC
@@ -1135,130 +1137,111 @@ CONTAINS
 !
 ! !LOCAL VARIABLES:
 !
-    LOGICAL             :: FIRST = .TRUE. ! ewl: shouldn't this be saved???
-    LOGICAL             :: LINTERP
-    CHARACTER(LEN=16)   :: STAMP
-    INTEGER             :: I, J, L, N, R, IRH, W, IRHN, NA, SpcID
-    INTEGER             :: AA, IWV, IIWV, NWVS, IR, NRT, S
-    REAL*4              :: TEMP( State_Grid%NX,State_Grid%NY,State_Grid%NZ)
-    REAL(fp)            :: TEMP2(State_Grid%NX,State_Grid%NY,State_Grid%NZ)
-    REAL(fp)            :: MSDENS(NAER), DRYAREA, VDRY, VH2O
-    REAL(f8)            :: XTAU
-    REAL*8              :: BCSCAT_AE  !(xnw, 8/24/15)
+    CHARACTER(LEN=16) :: STAMP
+    LOGICAL  :: LINTERP
+    INTEGER  :: I, J, L, N, R, IRH, W, IRHN, NA, SpcID
+    INTEGER  :: AA, IWV, IIWV, NWVS, IR, NRT, S
+    REAL*4   :: TEMP( State_Grid%NX,State_Grid%NY,State_Grid%NZ)
+    REAL(fp) :: TEMP2(State_Grid%NX,State_Grid%NY,State_Grid%NZ)
+    REAL(fp) :: MSDENS(NAER), DRYAREA, VDRY, VH2O
+    REAL(f8) :: XTAU
+    REAL*8   :: BCSCAT_AE  !(xnw, 8/24/15)
 
     ! SAVEd variables
-    INTEGER, SAVE :: id_BCPI,  id_BCPO,  id_DST1,  id_DST2
-    INTEGER, SAVE :: id_DST3,  id_DST4,  id_NH4,   id_NIT
-    INTEGER, SAVE :: id_OCPO,  id_OCPI,  id_SALA,  id_SALC
-    INTEGER, SAVE :: id_SO4,   id_SO4s,  id_NITs,  id_NH4s
-    INTEGER, SAVE :: id_POA1,  id_POA2,  id_OPOA1, id_OPOA2
-    INTEGER, SAVE :: id_TSOA1, id_TSOA2, id_TSOA3, id_TSOA0
-    INTEGER, SAVE :: id_ASOAN, id_ASOA1, id_ASOA2, id_ASOA3
-    INTEGER, SAVE :: id_DUST1, id_SOAS,  id_SALACL, id_HMS
-    INTEGER, SAVE :: id_SOAGX, id_SOAIE
-    INTEGER, SAVE :: id_INDIOL,id_LVOCOA
+    LOGICAL,  SAVE :: FIRST = .TRUE.
 
-    ! Variables for speed diagnostics
-    INTEGER             :: ITIMEVALS(8)
-    REAL*8              :: OLDSECS, NEWSECS
-    REAL*8              :: OLDSECST, NEWSECST
-
-    ! Effective radius at RH bins read in from "FJX_spec.dat"
-    REAL(fp)            :: RW(NRH)
-
-    ! Effective radius at RH after interpolation
-    REAL(fp)            :: REFF
-
-    ! Q at different RH bins read in from "FJX_spec.dat"
-    REAL(fp)            :: AW(NRH)
-    REAL(fp)            :: QW(NRH)
-    REAL(fp)            :: SSW(NRH)
-    REAL(fp)            :: ASYW(NRH)
-    REAL(fp)            :: AW0
-    REAL(fp)            :: QW0
-    REAL(fp)            :: SSW0
-    REAL(fp)            :: ASYW0
-    REAL(fp)            :: DENOM,NUMER
-
-    ! Used to interpolate between sizes
-    REAL(fp)            :: FRAC
-
-    ! Change in Q (extinction efficiency)
-    REAL(fp)            :: SCALEQ
-
-    ! Change in Radius with RH
-    REAL(fp)            :: SCALER
-
-    ! Change in SSA with RH
-    REAL(fp)            :: SCALESSA
-
-    ! Change in asym parameter with RH
-    REAL(fp)            :: SCALEASY
-
-    ! Change in Optical properties vs RH
-    REAL(fp)            :: SCALEA
-    REAL(fp)            :: SCALEOD
-
-    ! Change in Vol vs RH
-    REAL(fp)            :: SCALEVOL
-
-    ! Convert AbsHum to RelHum
-    REAL(fp)            :: TK,CONSEXP,VPRESH2O,RELHUM
+    INTEGER,  SAVE :: id_SO4, id_SALA, id_SALC, id_BCPI, id_OCPI, id_POA1
 
     ! Relative Humidities
-    REAL(fp),  SAVE     :: RH(NRH)   = (/0e+0_fp,0.5e+0_fp, &
-                                         0.7e+0_fp,0.8e+0_fp,0.9e+0_fp/)
+    REAL(fp), SAVE :: RH(NRH)   = (/0e+0_fp,0.5e+0_fp, &
+                                    0.7e+0_fp,0.8e+0_fp,0.9e+0_fp/)
+
+    ! Variables for speed diagnostics
+    INTEGER  :: ITIMEVALS(8)
+    REAL*8   :: OLDSECS, NEWSECS
+    REAL*8   :: OLDSECST, NEWSECST
+
+    ! Effective radius at RH bins read in from "FJX_spec.dat"
+    REAL(fp) :: RW(NRH)
+
+    ! Effective radius at RH after interpolation
+    REAL(fp) :: REFF
+
+    ! Q at different RH bins read in from "FJX_spec.dat"
+    REAL(fp) :: AW(NRH)
+    REAL(fp) :: QW(NRH)
+    REAL(fp) :: SSW(NRH)
+    REAL(fp) :: ASYW(NRH)
+    REAL(fp) :: AW0
+    REAL(fp) :: QW0
+    REAL(fp) :: SSW0
+    REAL(fp) :: ASYW0
+    REAL(fp) :: DENOM,NUMER
+
+    ! Used to interpolate between sizes
+    REAL(fp) :: FRAC
+
+    ! Change in Q (extinction efficiency)
+    REAL(fp) :: SCALEQ
+
+    ! Change in Radius with RH
+    REAL(fp) :: SCALER
+
+    ! Change in SSA with RH
+    REAL(fp) :: SCALESSA
+
+    ! Change in asym parameter with RH
+    REAL(fp) :: SCALEASY
+
+    ! Change in Optical properties vs RH
+    REAL(fp) :: SCALEA
+    REAL(fp) :: SCALEOD
+
+    ! Change in Vol vs RH
+    REAL(fp) :: SCALEVOL
+
+    ! Convert AbsHum to RelHum
+    REAL(fp) :: TK, CONSEXP, VPRESH2O, RELHUM
 
     ! Temporary variables
-    REAL(fp)            :: RAER, SADSTRAT, RHOSTRAT, XSASTRAT
-    INTEGER             :: ISTRAT
+    REAL(fp) :: RAER, SADSTRAT, RHOSTRAT, XSASTRAT
+    INTEGER  :: ISTRAT
 
     ! Aqueous aerosol volume (cm3/cm3):
-    REAL(fp)            :: TAERVOL
+    REAL(fp) :: TAERVOL
 
     ! Local variables for quantities from Input_Opt
-    LOGICAL             :: Is_ComplexSOA
-    LOGICAL             :: IS_OCPI
-    REAL(fp)            :: GF_RH
+    LOGICAL  :: Is_ComplexSOA
+    LOGICAL  :: IS_OCPI
+    REAL(fp) :: GF_RH
 
-    ! Pointers to State_Chm%Phot
-    REAL(fp), POINTER :: OCFPOA      (:,:)
-    REAL(fp), POINTER :: OCFOPOA     (:,:)
+    ! Local arrays
+    REAL(fp) :: DAERSL(State_Grid%NX,State_Grid%NY,State_Grid%NZ,2)
+    REAL(fp) :: WAERSL(State_Grid%NX,State_Grid%NY,State_Grid%NZ,NAER)
+
+    ! Pointers to State_Chm
     REAL(fp), POINTER :: BCPI        (:,:,:)
     REAL(fp), POINTER :: BCPO        (:,:,:)
-    REAL(fp), POINTER :: OCPI        (:,:,:)
     REAL(fp), POINTER :: OCPO        (:,:,:)
     REAL(fp), POINTER :: OCPISOA     (:,:,:)
     REAL(fp), POINTER :: SALA        (:,:,:)
-    REAL(fp), POINTER :: ACL         (:,:,:)
     REAL(fp), POINTER :: SALC        (:,:,:)
     REAL(fp), POINTER :: SO4_NH4_NIT (:,:,:)
-    REAL(fp), POINTER :: SO4         (:,:,:)
-    REAL(fp), POINTER :: HMS         (:,:,:)
-    REAL(fp), POINTER :: NH4         (:,:,:)
-    REAL(fp), POINTER :: NIT         (:,:,:)
     REAL(fp), POINTER :: SLA         (:,:,:)
     REAL(fp), POINTER :: SPA         (:,:,:)
-    REAL(fp), POINTER :: TSOA        (:,:,:)
-    REAL(fp), POINTER :: ASOA        (:,:,:)
-    REAL(fp), POINTER :: OPOA        (:,:,:)
-    REAL(fp), POINTER :: SOAGX       (:,:,:)
-    REAL(fp), POINTER :: PM25        (:,:,:)
-    REAL(fp), POINTER :: PM10        (:,:,:)
     REAL(fp), POINTER :: ISOAAQ      (:,:,:)
-    REAL(fp), POINTER :: SOAS        (:,:,:)
+#ifdef RRTMG
     REAL(fp), POINTER :: FRAC_SNA    (:,:,:,:)
-    REAL(fp), POINTER :: DAERSL      (:,:,:,:)
-    REAL(fp), POINTER :: WAERSL      (:,:,:,:)
+#endif
 
     ! Other pointers
-    REAL(fp), POINTER   :: BXHEIGHT (:,:,:)
-    REAL(fp), POINTER   :: ERADIUS  (:,:,:,:)
-    REAL(fp), POINTER   :: TAREA    (:,:,:,:)
-    REAL(fp), POINTER   :: WERADIUS (:,:,:,:)
-    REAL(fp), POINTER   :: WTAREA   (:,:,:,:)
-    REAL(fp), POINTER   :: ACLRADIUS(:,:,:)
-    REAL(fp), POINTER   :: ACLAREA  (:,:,:)
+    REAL(fp), POINTER :: BXHEIGHT (:,:,:)
+    REAL(fp), POINTER :: ERADIUS  (:,:,:,:)
+    REAL(fp), POINTER :: TAREA    (:,:,:,:)
+    REAL(fp), POINTER :: WERADIUS (:,:,:,:)
+    REAL(fp), POINTER :: WTAREA   (:,:,:,:)
+    REAL(fp), POINTER :: ACLRADIUS(:,:,:)
+    REAL(fp), POINTER :: ACLAREA  (:,:,:)
 
     ! For diagnostics
     LOGICAL                :: IsWL1
@@ -1292,74 +1275,34 @@ CONTAINS
     WTAREA      => State_Chm%WetAeroArea ! Wet Aerosol Area [cm2/cm3]
     ACLRADIUS   => State_Chm%AClRadi     ! Fine Cl- Radius [cm]
     ACLAREA     => State_Chm%AClArea     ! Fine Cl- Area [cm2/cm3]
-    OCFPOA      => State_Chm%Aer%OCFPOA
-    OCFOPOA     => State_Chm%Aer%OCFOPOA
     BCPI        => State_Chm%Aer%BCPI
     BCPO        => State_Chm%Aer%BCPO
-    OCPI        => State_Chm%Aer%OCPI
     OCPO        => State_Chm%Aer%OCPO
     OCPISOA     => State_Chm%Aer%OCPISOA
     SALA        => State_Chm%Aer%SALA
-    ACL         => State_Chm%Aer%ACL
     SALC        => State_Chm%Aer%SALC
     SO4_NH4_NIT => State_Chm%Aer%SO4_NH4_NIT
-    SO4         => State_Chm%Aer%SO4
-    HMS         => State_Chm%Aer%HMS
-    NH4         => State_Chm%Aer%NH4
-    NIT         => State_Chm%Aer%NIT
     SLA         => State_Chm%Aer%SLA
     SPA         => State_Chm%Aer%SPA
-    TSOA        => State_Chm%Aer%TSOA
-    ASOA        => State_Chm%Aer%ASOA
-    OPOA        => State_Chm%Aer%OPOA
-    SOAGX       => State_Chm%Aer%SOAGX
-    PM25        => State_Chm%Aer%PM25
-    PM10        => State_Chm%Aer%PM10
     ISOAAQ      => State_Chm%Aer%ISOAAQ
-    SOAS        => State_Chm%Aer%SOAS
+#ifdef RRTMG
     FRAC_SNA    => State_Chm%Aer%FRAC_SNA
-    DAERSL      => State_Chm%Aer%DAERSL
-    WAERSL      => State_Chm%Aer%WAERSL
+#endif
+
+    ! Initialize arrays
+    DAERSL(:,:,:,:) = 0.0_fp
+    WAERSL(:,:,:,:) = 0.0_fp
 
     ! First run only
     IF ( FIRST ) THEN
 
        ! Set species IDs
-       id_BCPI   = Ind_( 'BCPI'   )
-       id_BCPO   = Ind_( 'BCPO'   )
-       id_DST1   = Ind_( 'DST1'   )
-       id_DST2   = Ind_( 'DST2'   )
-       id_DST3   = Ind_( 'DST3'   )
-       id_DST4   = Ind_( 'DST4'   )
-       id_DUST1  = Ind_( 'DUST1'  )
-       id_NH4    = Ind_( 'NH4'    )
-       id_NIT    = Ind_( 'NIT'    )
-       id_OCPO   = Ind_( 'OCPO'   )
-       id_OCPI   = Ind_( 'OCPI'   )
-       id_SOAS   = Ind_( 'SOAS'   )
-       id_SALA   = Ind_( 'SALA'   )
-       id_SALC   = Ind_( 'SALC'   )
-       id_SALACL = Ind_( 'SALACL' )
-       id_SO4    = Ind_( 'SO4'    )
-       id_SO4s   = Ind_( 'SO4s'   )
-       id_HMS    = Ind_( 'HMS'    )
-       id_NITs   = Ind_( 'NITs'   )
-       id_POA1   = Ind_( 'POA1'   )
-       id_POA2   = Ind_( 'POA2'   )
-       id_OPOA1  = Ind_( 'OPOA1'  )
-       id_OPOA2  = Ind_( 'OPOA2'  )
-       id_TSOA1  = Ind_( 'TSOA1'  )
-       id_TSOA2  = Ind_( 'TSOA2'  )
-       id_TSOA3  = Ind_( 'TSOA3'  )
-       id_TSOA0  = Ind_( 'TSOA0'  )
-       id_ASOAN  = Ind_( 'ASOAN'  )
-       id_ASOA1  = Ind_( 'ASOA1'  )
-       id_ASOA2  = Ind_( 'ASOA2'  )
-       id_ASOA3  = Ind_( 'ASOA3'  )
-       id_SOAGX  = Ind_( 'SOAGX'  )
-       id_SOAIE  = Ind_( 'SOAIE'  )
-       id_INDIOL = Ind_( 'INDIOL' )
-       id_LVOCOA = Ind_( 'LVOCOA' )
+       id_SO4  = Ind_( 'SO4'  )
+       id_BCPI = Ind_( 'BCPI' )
+       id_OCPI = Ind_( 'OCPI' )
+       id_SALA = Ind_( 'SALA' )
+       id_SALC = Ind_( 'SALC' )
+       id_POA1 = Ind_( 'POA1' )
 
        ! Initialize the mapping between hygroscopic species in the
        ! species database and the species order in NRHAER
@@ -2382,34 +2325,19 @@ CONTAINS
     WTAREA      => NULL()
     ACLRADIUS   => NULL()
     ACLAREA     => NULL()
-    OCFPOA      => NULL()
-    OCFOPOA     => NULL()
     BCPI        => NULL()
     BCPO        => NULL()
-    OCPI        => NULL()
     OCPO        => NULL()
     OCPISOA     => NULL()
     SALA        => NULL()
-    ACL         => NULL()
     SALC        => NULL()
     SO4_NH4_NIT => NULL()
-    SO4         => NULL()
-    HMS         => NULL()
-    NH4         => NULL()
-    NIT         => NULL()
     SLA         => NULL()
     SPA         => NULL()
-    TSOA        => NULL()
-    ASOA        => NULL()
-    OPOA        => NULL()
-    SOAGX       => NULL()
-    PM25        => NULL()
-    PM10        => NULL()
     ISOAAQ      => NULL()
-    SOAS        => NULL()
+#ifdef RRTMG
     FRAC_SNA    => NULL()
-    DAERSL      => NULL()
-    WAERSL      => NULL()
+#endif
 
     ! Reset first-time flag
     FIRST = .FALSE.
