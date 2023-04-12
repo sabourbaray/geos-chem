@@ -126,38 +126,67 @@ CONTAINS
     GC_Photo_ID => State_Chm%Phot%GC_Photo_ID
 
     !--------------------------------------------------------------------
-    ! Initialize Fast-JX
+    ! Initialize Fast-JX if photolysis enabled
     !
     ! NOTE: we need to call this for a dry-run so that we can get
     ! a list of all of the lookup tables etc read by Fast-JX
     !--------------------------------------------------------------------
+    IF ( Input_Opt%Do_Photolysis ) THEN
 #ifdef CLOUDJ
-    IF ( TRIM(Input_Opt%CloudJ_Dir) == MISSING_STR ) THEN
-       ErrMsg = 'Init_Photolysis: Cloud-J directory missing in ' // &
-                'geoschem_config.yml!'
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
-    CALL Init_CloudJ( Input_Opt, State_Diag, State_Chm, RC )
-    IF ( RC /= GC_SUCCESS ) THEN
-       ErrMsg = 'Error encountered in "Init_CloudJ"!'
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
+       IF ( TRIM(Input_Opt%CloudJ_Dir) == MISSING_STR ) THEN
+          ErrMsg = 'Init_Photolysis: Cloud-J directory missing in ' // &
+                   'geoschem_config.yml!'
+          CALL GC_Error( ErrMsg, RC, ThisLoc )
+          RETURN
+       ENDIF
+       CALL Init_CloudJ( Input_Opt, State_Diag, State_Chm, RC )
+       IF ( RC /= GC_SUCCESS ) THEN
+          ErrMsg = 'Error encountered in "Init_CloudJ"!'
+          CALL GC_Error( ErrMsg, RC, ThisLoc )
+          RETURN
+       ENDIF
 #else
-    IF ( TRIM(Input_Opt%Fast_JX_Dir) == MISSING_STR ) THEN
-       ErrMsg = 'Init_Photolysis: Fast-JX directory missing in ' // &
-                'in geoschem_config.yml!'
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
-    CALL Init_FastJX( Input_Opt, State_Diag, State_Chm, RC )
-    IF ( RC /= GC_SUCCESS ) THEN
-       ErrMsg = 'Error encountered in "Init_FastJX"!'
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
+       IF ( TRIM(Input_Opt%Fast_JX_Dir) == MISSING_STR ) THEN
+          ErrMsg = 'Init_Photolysis: Fast-JX directory missing in ' // &
+                   'in geoschem_config.yml!'
+          CALL GC_Error( ErrMsg, RC, ThisLoc )
+          RETURN
+       ENDIF
+       CALL Init_FastJX( Input_Opt, State_Diag, State_Chm, RC )
+       IF ( RC /= GC_SUCCESS ) THEN
+          ErrMsg = 'Error encountered in "Init_FastJX"!'
+          CALL GC_Error( ErrMsg, RC, ThisLoc )
+          RETURN
+       ENDIF
 #endif
+   ENDIF
+
+    !--------------------------------------------------------------------
+    ! Read in AOD data even if photolysis disabled
+    ! (or just print file name if in dry-run mode)
+    !--------------------------------------------------------------------
+    CALL RD_AOD( Input_Opt, State_Chm, RC )
+    IF ( RC /= GC_SUCCESS ) THEN
+       ErrMsg = 'Error encountered in FAST-JX routine "RD_AOD"!'
+       CALL GC_Error( ErrMsg, RC, ThisLoc )
+       RETURN
+    ENDIF
+
+    ! Compute the required wavelengths in the LUT to calculate requested AOD
+    IF ( .not. Input_Opt%DryRun ) THEN
+       IF (Input_Opt%amIRoot) WRITE(6,*) 'Wavelength optics read successfully'
+       CALL CALC_AOD( Input_Opt, State_Chm, RC )
+    ENDIF
+
+    !--------------------------------------------------------------------
+    ! Exit if photolysis disabled (zero J-values)
+    !--------------------------------------------------------------------
+    IF ( .NOT. Input_Opt%Do_Photolysis ) RETURN
+
+    !--------------------------------------------------------------------
+    ! Set up MIEDX array to interpret between GC and FJX aerosol indexing
+    !--------------------------------------------------------------------
+    CALL SET_AER( Input_Opt, State_Chm, RC )
 
     !========================================================================
     ! Flag special reactions that will be later adjusted by
@@ -447,34 +476,6 @@ CONTAINS
              State_Chm%Phot%UVXFACTOR(J) = ND64MULT/WL(J)
           ENDDO
        ENDIF
-    ENDIF
-
-    !=====================================================================
-    ! Read in AOD data
-    ! (or just print file name if in dry-run mode)
-    !=====================================================================
-
-    CALL RD_AOD( Input_Opt, State_Chm, RC )
-    IF ( RC /= GC_SUCCESS ) THEN
-       ErrMsg = 'Error encountered in FAST-JX routine "RD_AOD"!'
-       CALL GC_Error( ErrMsg, RC, ThisLoc )
-       RETURN
-    ENDIF
-    
-    ! Only do the following if we are not running in dry-run mode
-    IF ( .not. Input_Opt%DryRun ) THEN
-    
-       IF ( Input_Opt%amIRoot ) THEN
-          WRITE( 6, * ) 'Optics read for all wavelengths successfully'
-       ENDIF
-    
-       ! Now calculate the required wavelengths in the LUT to calculate
-       ! the requested AOD
-       CALL CALC_AOD( Input_Opt, State_Chm, RC )
-
-       ! Set up MIEDX array to interpret between GC and FJX aerosol indexing
-       CALL SET_AER( Input_Opt, State_Chm, RC )
-
     ENDIF
 
     ! Free pointers
@@ -1059,15 +1060,15 @@ CONTAINS
 !
 ! !INPUT PARAMETERS:
 !
-    TYPE(OptInput), INTENT(IN) :: Input_Opt
+    TYPE(OptInput), INTENT(IN)    :: Input_Opt
 !
 ! !INPUT/OUTPUT PARAMETERS:
 !
-    TYPE(ChmState), INTENT(IN) :: State_Chm
+    TYPE(ChmState), INTENT(INOUT) :: State_Chm
 !
 ! !OUTPUT PARAMETERS:
 !
-    INTEGER,        INTENT(IN) :: RC
+    INTEGER,        INTENT(IN)    :: RC
 !
 ! !REMARKS:
 !  Now the user is able to select any 3 wavelengths for optics
