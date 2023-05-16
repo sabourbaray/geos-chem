@@ -559,8 +559,9 @@ CONTAINS
             ( .not. State_Met%InTroposphere(I,J,L) )
 
        ! Is this grid box within the stratosphere (but not mesosphere)?
+       ! NOTE: The stratopause can be assumed as 1 hPa
        State_Met%InStratosphere(I,J,L) = &
-            ( L <= State_Grid%MaxStratLev .and. State_Met%InStratMeso(I,J,L) )
+         ( State_Met%PEDGE(I,J,L) > 1.0_fp .and. State_Met%InStratMeso(I,J,L) )
 
        ! Is grid box (I,J,L) within the chemistry grid?
        IF ( L > State_Grid%MaxChemLev ) THEN

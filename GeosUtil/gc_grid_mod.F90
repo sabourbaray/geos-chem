@@ -120,19 +120,22 @@ CONTAINS
     State_Grid%NativeNZ = 72
 
     ! Hardcode maximum number of levels below tropopause and stratopause
+    ! NOTE: To avoid code breaking, set MaxChemLev from the former
+    ! MaxStratLev for the time being.  We can remove this later.
+    !  -- Bob Yantosca (16 May 2023)
     IF ( State_Grid%NZ == 47 ) THEN
-       State_Grid%MaxStratLev = 44
+       State_Grid%MaxChemLev = 44
     ELSE IF ( State_Grid%NZ == 72 ) THEN
-       State_Grid%MaxStratLev = 59
+       State_Grid%MaxChemLev = 59
     ELSE IF ( State_Grid%NZ == 40 ) THEN
        State_Grid%NativeNZ = 40
-       State_Grid%MaxStratLev = 40
+       State_Grid%MaxChemLev = 40
     ELSE IF ( State_Grid%NZ == 74 ) THEN
        State_Grid%NativeNZ = 102
-       State_Grid%MaxStratLev = 72
+       State_Grid%MaxChemLev = 72
     ELSE IF ( State_Grid%NZ == 102 ) THEN
        State_Grid%NativeNZ = 102
-       State_Grid%MaxStratLev = 91
+       State_Grid%MaxChemLev = 91
     ELSE
        ErrMsg = 'State_Grid%GridRes = ' // Trim( State_Grid%GridRes)// &
                 ' does not have MaxTropLev and MaxStratLev defined.'// &
@@ -140,9 +143,6 @@ CONTAINS
        CALL GC_Error( ErrMsg, RC, ThisLoc )
        RETURN
     ENDIF
-
-    ! Set maximum number of levels in the chemistry grid
-    State_Grid%MaxChemLev  = State_Grid%MaxStratLev
 
     ! Set a flag to denote if this is a GMAO met field
     ! (which has half-sized polar grid boxes)

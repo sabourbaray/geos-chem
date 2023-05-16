@@ -995,7 +995,6 @@ CONTAINS
        !====================================================================
 
        ! If we are not below the stratopause don't do the chemistry!
-       !IF ( L > State_Grid%MaxStratLev ) CYCLE
        IF ( .not. State_Met%InChemGrid( I, J, L ) ) CYCLE
 
        ! Skipping buffer zone (lzh, 08/10/2014)
@@ -2785,7 +2784,7 @@ CONTAINS
        !======================================================================
        ! Proceed only if gridbox is below the stratopause
        !======================================================================
-       IF ( L > State_Grid%MaxStratLev ) CYCLE
+       IF ( .not. State_Met%InChemGrid( I, J, L ) ) CYCLE
 
        !----------------------------------------------------------------------
        ! Copy values into THREADPRIVATE variables in gckpp_Global.F90
