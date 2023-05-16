@@ -121,22 +121,17 @@ CONTAINS
 
     ! Hardcode maximum number of levels below tropopause and stratopause
     IF ( State_Grid%NZ == 47 ) THEN
-       State_Grid%MaxTropLev  = 38
        State_Grid%MaxStratLev = 44
     ELSE IF ( State_Grid%NZ == 72 ) THEN
-       State_Grid%MaxTropLev  = 40
        State_Grid%MaxStratLev = 59
     ELSE IF ( State_Grid%NZ == 40 ) THEN
        State_Grid%NativeNZ = 40
-       State_Grid%MaxTropLev  = 28
        State_Grid%MaxStratLev = 40
     ELSE IF ( State_Grid%NZ == 74 ) THEN
        State_Grid%NativeNZ = 102
-       State_Grid%MaxTropLev  = 60
        State_Grid%MaxStratLev = 72
     ELSE IF ( State_Grid%NZ == 102 ) THEN
        State_Grid%NativeNZ = 102
-       State_Grid%MaxTropLev  = 60
        State_Grid%MaxStratLev = 91
     ELSE
        ErrMsg = 'State_Grid%GridRes = ' // Trim( State_Grid%GridRes)// &
