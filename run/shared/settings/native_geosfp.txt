@@ -14,7 +14,12 @@ RUNDIR_MET_CN_YR=2011
 RUNDIR_MET_PRES_UNIT='hPa'
 RUNDIR_MET_PRES_SCALE='1.0'
 
+RUNDIR_METLIGHTNING='GEOSFP'
+RUNDIR_METLIGHTNING_DIR_NATIVE="${RUNDIR_DATA_ROOT}/GEOS_0.25x0.3125/GEOS_FP_Native"
+RUNDIR_METLIGHTNING_NATIVE_RES='0.25x0.3125'
 RUNDIR_LIGHTNOX_CLIM=false
+RUNDIR_MET_LCLIM='2014-2019'
+
 RUNDIR_MET_EXTDATA_PRIMARY_EXPORTS="""
 ${RUNDIR_MET_EXTDATA_PRIMARY_EXPORTS_FOR_ADVECTION}
 
@@ -107,18 +112,6 @@ FRLAND   1 N Y - none none FRLAND     ./MetDir/GEOS.fp.asm.const_2d_asm_Nx.00000
 FRLANDIC 1 N Y - none none FRLANDICE  ./MetDir/GEOS.fp.asm.const_2d_asm_Nx.00000000_0000.V01.nc4
 FROCEAN  1 N Y - none none FROCEAN    ./MetDir/GEOS.fp.asm.const_2d_asm_Nx.00000000_0000.V01.nc4
 PHIS m2_s-2 N Y - none none PHIS      ./MetDir/GEOS.fp.asm.const_2d_asm_Nx.00000000_0000.V01.nc4
-
-#
-#==============================================================================
-# --- Fields for lightning emissions (Extension 103) ---
-# These fields are stored in State_Met, along with the other met fields
-#==============================================================================
-FLASH_DENS 1 N Y F0;013000 none none LDENS ./HcoDir/OFFLINE_LIGHTNING/v2020-03/GEOSFP/%y4/FLASH_CTH_GEOSFP_0.25x0.3125_%y4_%m2.nc4
-CONV_DEPTH 1 N Y F0;013000 none none CTH   ./HcoDir/OFFLINE_LIGHTNING/v2020-03/GEOSFP/%y4/FLASH_CTH_GEOSFP_0.25x0.3125_%y4_%m2.nc4
-
-# To utilize climatology lightning fields, comment the two lines above and uncomment these lines
-#FLASH_DENS 1 N Y F0;013000 none none LDENS ./HcoDir/OFFLINE_LIGHTNING/v2020-03/GEOSFP/CLIM/FLASH_CTH_GEOSFP_0.25x0.3125_2014-2019.ymonmean.nc4
-#CONV_DEPTH 1 N Y F0;013000 none none CTH   ./HcoDir/OFFLINE_LIGHTNING/v2020-03/GEOSFP/CLIM/FLASH_CTH_GEOSFP_0.25x0.3125_2014-2019.ymonmean.nc4
 
 """
 
